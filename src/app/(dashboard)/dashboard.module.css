@@ -1,0 +1,47 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-cream-white);
+  min-width: 0;
+}
+
+.header {
+  height: 70px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 2rem;
+  box-shadow: var(--shadow-sm);
+  z-index: 5;
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  background-color: var(--color-rose-gold);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.content {
+  padding: 2rem;
+  flex: 1;
+  overflow-y: auto;
+}

@@ -1,0 +1,122 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: var(--color-charcoal-black);
+  margin: 0;
+}
+
+.primaryButton {
+  background-color: var(--color-rose-gold);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.primaryButton:hover {
+  opacity: 0.9;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+}
+
+.searchInput {
+  flex: 1;
+  max-width: 400px;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.filterSelect {
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 1rem;
+  background: white;
+}
+
+.tableContainer {
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: right;
+}
+
+.table th, .table td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.table th {
+  color: var(--color-charcoal-light);
+  font-weight: 600;
+}
+
+.debtPositive {
+  color: var(--color-success);
+  font-weight: bold;
+}
+
+.debtNegative {
+  color: var(--color-danger);
+  font-weight: bold;
+}
+
+.badgeSuccess {
+  background-color: rgba(74, 222, 128, 0.2);
+  color: #166534;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.badgeWarning {
+  background-color: rgba(251, 146, 60, 0.2);
+  color: #9a3412;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.actionBtn {
+  background: none;
+  border: 1px solid var(--color-rose-gold);
+  color: var(--color-rose-gold);
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.actionBtn:hover {
+  background: var(--color-rose-gold);
+  color: white;
+}
