@@ -1,0 +1,170 @@
+.container {
+  padding: 1rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  margin-bottom: 0;
+  font-size: 2.25rem;
+  color: var(--color-charcoal-black);
+}
+
+.addButton {
+  background-color: var(--color-rose-gold);
+  color: white;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-md);
+  font-family: inherit;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.addButton::before {
+  content: '+';
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.addButton:hover {
+  background-color: #a05a65;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.categorySection {
+  margin-bottom: 3.5rem;
+}
+
+.categoryTitle {
+  font-size: 1.5rem;
+  color: var(--color-charcoal-black);
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--color-rose-gold-light);
+  padding-bottom: 0.5rem;
+  display: inline-block;
+  font-weight: 500;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--color-rose-gold);
+  opacity: 0.8;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.serviceName {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-charcoal-black);
+  margin: 0;
+}
+
+.price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-rose-gold);
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+}
+
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.label {
+  font-weight: 500;
+  color: var(--color-charcoal-light);
+}
+
+.value {
+  color: var(--color-charcoal-black);
+  font-weight: 500;
+}
+
+.cardActions {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-glass-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.actionButton {
+  background: transparent;
+  border: 1px solid var(--color-rose-gold-light);
+  color: var(--color-rose-gold);
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.actionButton:hover {
+  background: var(--color-rose-gold-light);
+  color: var(--color-charcoal-black);
+}
+
+.actionButton.danger:hover {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: white;
+}

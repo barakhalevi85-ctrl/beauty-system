@@ -34,6 +34,9 @@
 body {
   font-family: var(--font-family-base);
   background-color: var(--color-cream-white);
+  background-image: radial-gradient(at 0% 0%, hsla(353,44%,86%,1) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, hsla(353,44%,86%,0.5) 0px, transparent 50%);
+  background-attachment: fixed;
   color: var(--color-charcoal-black);
   direction: rtl;
   min-height: 100vh;
