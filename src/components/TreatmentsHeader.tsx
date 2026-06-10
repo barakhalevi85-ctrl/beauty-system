@@ -2,21 +2,24 @@
 
 import { useState } from 'react';
 import { AddTreatmentModal } from './AddTreatmentModal';
+import { AddCategoryModal } from './AddCategoryModal';
 import styles from '@/app/(dashboard)/treatments/treatments.module.css';
 
 export function TreatmentsHeader() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   return (
     <>
       <header className={styles.header}>
         <h1 className={styles.title}>ניהול טיפולים ומחירון</h1>
-        <button className={styles.addButton} onClick={() => setIsModalOpen(true)}>
-          הוסף אזור / טיפול חדש
-        </button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button className={styles.addButton} onClick={() => setIsCategoryModalOpen(true)} style={{ background: 'transparent', border: '2px solid var(--color-rose-gold)', color: 'var(--color-charcoal-black)' }}>
+            + הוספת קטגוריה
+          </button>
+        </div>
       </header>
 
-      {isModalOpen && <AddTreatmentModal onClose={() => setIsModalOpen(false)} />}
+      {isCategoryModalOpen && <AddCategoryModal onClose={() => setIsCategoryModalOpen(false)} />}
     </>
   );
 }

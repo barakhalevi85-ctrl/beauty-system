@@ -1,28 +1,73 @@
-import React from 'react';
 import styles from './calendar.module.css';
 import { prisma } from '@/lib/prisma';
-import { CalendarHeader } from '@/components/CalendarHeader';
-import AppointmentCard from './AppointmentCard';
+import { CalendarGrid } from './CalendarGrid';
+import { MonthlyCalendarView } from './MonthlyCalendarView';
+import { getSystemSettings, getClosedDates } from '@/actions/settingsActions';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
-export default async function CalendarPage() {
-  const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'];
-  const hours = [
-    '09:00', '10:00', '11:00', '12:00', '13:00', 
-    '14:00', '15:00', '16:00', '17:00', '18:00'
-  ];
+export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ date?: string, view?: string }> }) {
+  const params = await searchParams;
+  const viewType = params.view === 'monthly' ? 'monthly' : 'weekly';
+  const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  
+  const settings = await getSystemSettings();
+  const closedDates = await getClosedDates();
+  
+  const weeklySchedule = settings.weeklySchedule ? JSON.parse(settings.weeklySchedule) : null;
+  
+  let minHour = 7;
+  let maxHour = 20;
 
-  const now = new Date();
+  if (weeklySchedule) {
+    minHour = 24;
+    maxHour = 0;
+    Object.values(weeklySchedule).forEach((day: any) => {
+      if (day.isOpen) {
+        const startH = parseInt(day.start.split(':')[0], 10);
+        const endH = parseInt(day.end.split(':')[0], 10);
+        if (startH < minHour) minHour = startH;
+        if (endH > maxHour) maxHour = endH;
+      }
+    });
+    if (minHour > 23) minHour = 7;
+    if (maxHour < minHour) maxHour = 20;
+    if (maxHour === 0) maxHour = 24;
+  }
+
+  const hours = [];
+  for (let h = minHour; h <= maxHour; h++) {
+    hours.push(`${h.toString().padStart(2, '0')}:00`);
+  }
+
+  const now = params.date ? new Date(params.date) : new Date();
+  
+  // boundaries for DB fetch
+  let startDate = new Date();
+  let endDate = new Date();
+  
+  // For weekly view
   const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
   const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const weekDates = Array.from({length: 7}).map((_, i) => new Date(startOfWeek.getTime() + i * 24 * 60 * 60 * 1000));
+  
+  if (viewType === 'monthly') {
+    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    startDate.setDate(startDate.getDate() - 7); // pad a week
+    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    endDate.setDate(endDate.getDate() + 7); // pad a week
+  } else {
+    startDate = startOfWeek;
+    endDate = endOfWeek;
+  }
 
   const [dbAppointments, clients, services] = await Promise.all([
     prisma.appointment.findMany({
       where: {
         date: {
-          gte: startOfWeek,
-          lt: endOfWeek
+          gte: startDate,
+          lt: endDate
         }
       },
       include: {
@@ -51,6 +96,7 @@ export default async function CalendarPage() {
       id: apt.id,
       day: dayName,
       hour: hourStr,
+      dateStr: apt.date.toDateString(),
       clientId: apt.clientId,
       serviceId: apt.serviceId,
       status: apt.status,
@@ -62,44 +108,34 @@ export default async function CalendarPage() {
 
   return (
     <div className={styles.calendarContainer}>
-      <CalendarHeader clients={clients} services={services} />
-
-      <div className={styles.glassPanel}>
-        <div className={styles.calendarGrid}>
-          {/* Top-Right Corner (Empty) */}
-          <div className={styles.cornerHeader}></div>
-          
-          {/* Days Headers */}
-          {days.map((day) => (
-            <div key={day} className={styles.dayHeader}>
-              {day}
-            </div>
-          ))}
-
-          {/* Time Rows */}
-          {hours.map((hour) => (
-            <React.Fragment key={hour}>
-              {/* Row Header - Time */}
-              <div className={styles.timeHeader}>{hour}</div>
-              
-              {/* Day Cells for this hour */}
-              {days.map((day) => {
-                const appointment = mappedAppointments.find(
-                  (apt) => apt.day === day && apt.hour === hour
-                );
-
-                return (
-                  <div key={`${day}-${hour}`} className={styles.gridCell}>
-                    {appointment && (
-                      <AppointmentCard appointment={appointment} hours={hours} />
-                    )}
-                  </div>
-                );
-              })}
-            </React.Fragment>
-          ))}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1 style={{ margin: 0, color: 'var(--color-charcoal-black)' }}>יומן תורים</h1>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <Link href={`/calendar?view=weekly&date=${now.toISOString().split('T')[0]}`} style={{ padding: '0.5rem 1rem', background: viewType === 'weekly' ? 'var(--color-rose-gold)' : 'var(--color-charcoal-light)', color: 'white', borderRadius: '4px', textDecoration: 'none' }}>תצוגה שבועית</Link>
+          <Link href={`/calendar?view=monthly&date=${now.toISOString().split('T')[0]}`} style={{ padding: '0.5rem 1rem', background: viewType === 'monthly' ? 'var(--color-rose-gold)' : 'var(--color-charcoal-light)', color: 'white', borderRadius: '4px', textDecoration: 'none' }}>תצוגה חודשית</Link>
         </div>
       </div>
+
+      {viewType === 'monthly' ? (
+        <MonthlyCalendarView 
+          mappedAppointments={mappedAppointments}
+          currentDateIso={now.toISOString()}
+          closedDates={closedDates}
+          weeklySchedule={weeklySchedule}
+        />
+      ) : (
+        <CalendarGrid 
+          mappedAppointments={mappedAppointments}
+          days={days}
+          hours={hours}
+          weekDates={weekDates}
+          clients={clients}
+          services={services}
+          currentDateIso={now.toISOString()}
+          weeklySchedule={weeklySchedule}
+          closedDates={closedDates}
+        />
+      )}
     </div>
   );
 }

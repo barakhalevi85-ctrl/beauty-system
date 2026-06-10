@@ -3,10 +3,12 @@
 import React, { useState } from 'react';
 import styles from './calendar.module.css';
 import LogTreatmentModal from './LogTreatmentModal';
+import { EditAppointmentModal } from '@/components/EditAppointmentModal';
 
-export default function AppointmentCard({ appointment, hours }: { appointment: any, hours: string[] }) {
+export default function AppointmentCard({ appointment, hours, services }: { appointment: any, hours: string[], services: any[] }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLogging, setIsLogging] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const startHourIndex = hours.indexOf(appointment.hour);
   const endHour = appointment.durationHours >= 2 
@@ -64,7 +66,40 @@ export default function AppointmentCard({ appointment, hours }: { appointment: a
             סמן כבוצע / תיעוד רפואי
           </button>
         )}
+
+        {isHovered && (
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
+            title="ערוך תור"
+            style={{
+              position: 'absolute',
+              top: '5px',
+              left: isCompleted ? '25px' : '5px', // Avoid overlapping with checkmark
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              transition: 'transform 0.2s',
+              zIndex: 10
+            }}
+            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.2)'} 
+            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          >
+            ✏️
+          </button>
+        )}
       </div>
+
+      {isEditing && (
+        <EditAppointmentModal 
+          onClose={() => setIsEditing(false)} 
+          appointment={appointment}
+          services={services}
+        />
+      )}
 
       {isLogging && (
         <LogTreatmentModal 

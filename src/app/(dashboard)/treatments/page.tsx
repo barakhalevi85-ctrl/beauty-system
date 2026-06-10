@@ -2,6 +2,8 @@ import styles from './treatments.module.css';
 import { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import { TreatmentsHeader } from '@/components/TreatmentsHeader';
+import { TreatmentActions } from '@/components/TreatmentActions';
+import { CategoryActions } from '@/components/CategoryActions';
 
 export const metadata: Metadata = {
   title: 'ניהול טיפולים ומחירון - GlamFlow',
@@ -42,37 +44,46 @@ export default async function TreatmentsPage() {
             <p>אין טיפולים במערכת עדיין. הוסף טיפול חדש.</p>
           </div>
         )}
-        {categories.map((category) => (
-          <section key={category.id} className={styles.categorySection}>
-            <h2 className={styles.categoryTitle}>{category.name}</h2>
-            <div className={styles.grid}>
-              {category.treatments.map((treatment) => (
-                <div key={treatment.id} className={`glass-panel ${styles.card}`}>
-                  <div className={styles.cardHeader}>
-                    <h3 className={styles.serviceName}>{treatment.name}</h3>
-                    <span className={styles.price}>₪{treatment.price}</span>
-                  </div>
-                  
-                  <div className={styles.cardBody}>
-                    <div className={styles.detailRow}>
-                      <span className={styles.label}>חבילה:</span>
-                      <span className={styles.value}>{treatment.packageType}</span>
-                    </div>
-                    <div className={styles.detailRow}>
-                      <span className={styles.label}>משך זמן משוער:</span>
-                      <span className={styles.value}>{treatment.durationMinutes} דק'</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.cardActions}>
-                    <button className={styles.actionButton}>ערוך</button>
-                    <button className={`${styles.actionButton} ${styles.danger}`}>מחק</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+          {categories.map((category) => {
+            const visibleTreatments = category.treatments.filter(t => t.name !== 'dummy_category_init');
+            return (
+            <section key={category.id} className={styles.categorySection} style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', marginBottom: '1rem' }}>
+                <h2 className={styles.categoryTitle} style={{ marginBottom: 0 }}>{category.name}</h2>
+                <CategoryActions categoryName={category.name} treatmentCount={visibleTreatments.length} />
+              </div>
+              <div className="glass-panel" style={{ maxHeight: '400px', overflowY: 'auto', padding: '0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'white' }}>
+                    <tr style={{ borderBottom: '2px solid var(--color-rose-gold)' }}>
+                      <th style={{ padding: '1rem', fontWeight: 'bold' }}>שם הטיפול</th>
+                      <th style={{ padding: '1rem', fontWeight: 'bold' }}>מחיר (₪)</th>
+                      <th style={{ padding: '1rem', fontWeight: 'bold', textAlign: 'center' }}>פעולות</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleTreatments.map((treatment) => (
+                      <tr key={treatment.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', transition: 'background 0.2s' }}>
+                        <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--color-charcoal-black)' }}>
+                          {treatment.name}
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-charcoal-light)', fontWeight: 'normal', marginTop: '0.25rem' }}>
+                            {treatment.packageType} | {treatment.durationMinutes} דק'
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--color-rose-gold)', fontSize: '1.1rem' }}>₪{treatment.price}</td>
+                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                          <TreatmentActions treatment={treatment} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            );
+          })}
+        </div>
       </main>
     </div>
   );

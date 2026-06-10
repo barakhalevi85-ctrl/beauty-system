@@ -2,10 +2,12 @@ import React from 'react';
 import styles from '../crm.module.css';
 import { prisma } from '@/lib/prisma';
 import SellPackageModal from '../SellPackageModal';
+import EditSeriesModal from '../EditSeriesModal';
 import AddCallLogForm from '@/components/AddCallLogForm';
 import EditableCallLog from '@/components/EditableCallLog';
 import DeleteClientButton from '@/components/DeleteClientButton';
 import TreatmentHistoryItem from '@/components/TreatmentHistoryItem';
+import FutureAppointmentItem from '@/components/FutureAppointmentItem';
 import { notFound } from 'next/navigation';
 
 async function getClientWithLogs(id: string) {
@@ -21,14 +23,19 @@ async function getClientWithLogs(id: string) {
       },
       callLogs: {
         orderBy: { createdAt: 'desc' },
+      },
+      appointments: {
+        where: { date: { gte: new Date() } },
+        orderBy: { date: 'asc' },
+        include: { service: true }
       }
     }
   });
 }
 
-export default async function CRMPage(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-  const client = await getClientWithLogs(params.id);
+export default async function CRMPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const client = await getClientWithLogs(resolvedParams.id);
   const services = await prisma.service.findMany({ orderBy: { name: 'asc' } });
   
   if (!client) {
@@ -51,7 +58,7 @@ export default async function CRMPage(props: { params: Promise<{ id: string }> }
             <p><strong>הצהרת בריאות:</strong> {client.healthDeclarationSent ? 'נשלחה ✅' : 'לא נשלחה ❌'}</p>
           </div>
         </div>
-        <SellPackageModal clientId={client.id} services={services} />
+        <SellPackageModal clientId={client.id} clientGender={client.gender || null} services={services} />
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
@@ -65,12 +72,15 @@ export default async function CRMPage(props: { params: Promise<{ id: string }> }
             {client.clientSeries.map((series) => (
               <div key={series.id} className="glass-panel" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h3 style={{ margin: '0 0 0.5rem 0' }}>{series.service.name} ({series.service.category})</h3>
+                  <h3 style={{ margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {series.serviceName || series.service?.name} ({series.service.category})
+                    <EditSeriesModal series={series} services={services} clientId={client.id} />
+                  </h3>
                   <p style={{ margin: 0, color: 'var(--color-charcoal-light)' }}>
                     {series.totalTreatments > 1 
                       ? `סדרה של ${series.totalTreatments} טיפולים` 
                       : 'טיפול בודד'
-                    } | נרכש ב: {new Date(series.createdAt).toLocaleDateString('he-IL')}
+                    } | נרכש ב: {new Date(series.createdAt).toLocaleDateString('he-IL')} | שולם: ₪{series.pricePaid || 0}
                   </p>
                 </div>
                 <div style={{ textAlign: 'center' }}>
@@ -80,6 +90,16 @@ export default async function CRMPage(props: { params: Promise<{ id: string }> }
                   <div style={{ fontSize: '0.8rem' }}>נוצלו</div>
                 </div>
               </div>
+            ))}
+          </div>
+
+          <h2 className={styles.sectionTitle}>תורים עתידיים</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+            {client.appointments.length === 0 && (
+              <p>אין תורים עתידיים ללקוח זה.</p>
+            )}
+            {client.appointments.map((apt) => (
+              <FutureAppointmentItem key={apt.id} appointment={apt} services={services} />
             ))}
           </div>
 

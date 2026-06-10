@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import styles from './crm.module.css';
-import { logTreatment } from '@/actions/crmActions';
+import React, { useState, useEffect } from 'react';
+import styles from '../crm/crm.module.css';
+import { logTreatment, getClientActiveSeries } from '@/actions/crmActions';
 
 export default function LogTreatmentModal({ 
   appointmentId, 
@@ -20,6 +20,15 @@ export default function LogTreatmentModal({
   onClose: () => void 
 }) {
   const [isPending, setIsPending] = useState(false);
+  const [activeSeries, setActiveSeries] = useState<any[]>([]);
+  const [loadingSeries, setLoadingSeries] = useState(true);
+
+  useEffect(() => {
+    getClientActiveSeries(clientId).then(series => {
+      setActiveSeries(series);
+      setLoadingSeries(false);
+    });
+  }, [clientId]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,8 +47,8 @@ export default function LogTreatmentModal({
   }
 
   return (
-    <div className={styles.modalOverlay} style={{ zIndex: 1000, position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className={`${styles.modalContent} glass-panel`} style={{ maxHeight: '90vh', overflowY: 'auto', background: 'white' }}>
+    <div className={styles.modalOverlay} style={{ zIndex: 1000, position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+      <div className={`${styles.modalContent} glass-panel`} style={{ maxHeight: '90vh', overflowY: 'auto', background: 'white' }} onClick={(e) => e.stopPropagation()}>
         <h2>תיעוד טיפול רפואי - {clientName}</h2>
         <p style={{ color: 'var(--color-charcoal-light)' }}>הטיפול: {serviceName || 'כללי'}</p>
         
@@ -50,8 +59,28 @@ export default function LogTreatmentModal({
           <input type="hidden" name="bodyArea" value={serviceName || 'כללי'} />
 
           <div className={styles.formGroup}>
+            <label>בחירת כרטיסייה / סדרה לניקוב:</label>
+            {loadingSeries ? (
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-charcoal-light)' }}>טוען כרטיסיות...</p>
+            ) : (
+              <select name="clientSeriesId" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)' }}>
+                <option value="none">ללא ניקוב כרטיסייה (תשלום מזומן / רגיל)</option>
+                {activeSeries.map(s => (
+                  <option key={s.id} value={s.id} selected={s.serviceId === serviceId}>
+                    {s.serviceName || s.service?.name} ({s.usedTreatments}/{s.totalTreatments} נוצלו)
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div className={styles.formGroup}>
             <label>עוצמה (Fluence Joule):</label>
             <input type="number" step="0.1" name="fluenceJoule" required placeholder="למשל: 14" className={styles.input} />
+          </div>
+          <div className={styles.formGroup}>
+            <label>סכום ששולם היום (אופציונלי, ב-₪):</label>
+            <input type="number" name="paymentAmount" placeholder="למשל: 150" className={styles.input} />
           </div>
           <div className={styles.formGroup}>
             <label>הערות טכנאי:</label>

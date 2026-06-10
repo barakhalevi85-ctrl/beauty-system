@@ -65,3 +65,6 @@ p {
   box-shadow: var(--shadow-glass);
   border-radius: var(--radius-lg);
 }
+
+.empty-cell-hover:hover { opacity: 1 !important; }
+
