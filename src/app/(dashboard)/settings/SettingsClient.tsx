@@ -3,14 +3,20 @@
 import React, { useState } from 'react';
 import styles from './settings.module.css';
 import { updateWeeklySchedule, addClosedDate, removeClosedDate } from '@/actions/settingsActions';
+import { createEmployee } from '@/actions/employeeActions';
+import { EmployeeModal } from '@/components/employees/EmployeeModal';
+import { EmployeeProfileModal } from '@/components/employees/EmployeeProfileModal';
 
 export default function SettingsClient({ 
   initialSettings, 
-  initialClosedDates 
+  initialClosedDates,
+  initialEmployees 
 }: { 
   initialSettings: any, 
-  initialClosedDates: any[] 
+  initialClosedDates: any[],
+  initialEmployees: any[]
 }) {
+  const [activeTab, setActiveTab] = useState('business');
   const [weeklySchedule, setWeeklySchedule] = useState<any>(
     initialSettings.weeklySchedule ? JSON.parse(initialSettings.weeklySchedule) : {}
   );
@@ -19,6 +25,9 @@ export default function SettingsClient({
   
   const [newClosedDate, setNewClosedDate] = useState('');
   const [newClosedDateDesc, setNewClosedDateDesc] = useState('');
+
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
 
   const [saving, setSaving] = useState(false);
 
@@ -66,10 +75,29 @@ export default function SettingsClient({
     }
   };
 
+  const handleSaveEmployee = async (data: any) => {
+    try {
+      await createEmployee(data);
+      setIsEmployeeModalOpen(false);
+      window.location.reload();
+    } catch (e) {
+      alert('שגיאה ביצירת עובד');
+    }
+  };
+
   return (
     <div>
-      <section className={`glass-panel ${styles.section}`}>
-        <h2 className={styles.sectionTitle}>שעות פעילות שבועיות</h2>
+      <div className={styles.tabsContainer}>
+        <button className={`${styles.tab} ${activeTab === 'business' ? styles.activeTab : ''}`} onClick={() => setActiveTab('business')}>עסק</button>
+        <button className={`${styles.tab} ${activeTab === 'messages' ? styles.activeTab : ''}`} onClick={() => setActiveTab('messages')}>הודעות</button>
+        <button className={`${styles.tab} ${activeTab === 'employees' ? styles.activeTab : ''}`} onClick={() => setActiveTab('employees')}>עובדים</button>
+        <button className={`${styles.tab} ${activeTab === 'calendar' ? styles.activeTab : ''}`} onClick={() => setActiveTab('calendar')}>יומן</button>
+      </div>
+
+      {activeTab === 'calendar' && (
+        <>
+          <section className={`glass-panel ${styles.section}`}>
+            <h2 className={styles.sectionTitle}>שעות פעילות שבועיות</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {daysOfWeek.map((dayName, idx) => {
             const dayData = weeklySchedule[idx] || { isOpen: false, start: '09:00', end: '18:00' };
@@ -157,8 +185,64 @@ export default function SettingsClient({
               </button>
             </div>
           ))}
-        </div>
-      </section>
+          </div>
+        </section>
+        </>
+      )}
+
+      {activeTab === 'employees' && (
+        <section className={`glass-panel ${styles.section}`}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 className={styles.sectionTitle} style={{ margin: 0 }}>ניהול עובדים</h2>
+            <button className={styles.addButton} style={{ width: 'auto' }} onClick={() => setIsEmployeeModalOpen(true)}>
+              + הוסף עובד חדש
+            </button>
+          </div>
+          {initialEmployees.length === 0 ? (
+            <p>אין עובדים מוגדרים כרגע במערכת.</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+              {initialEmployees.map(emp => (
+                <div 
+                  key={emp.id} 
+                  style={{ background: 'rgba(255,255,255,0.5)', padding: '1rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(0,0,0,0.1)' }}
+                  onClick={() => setSelectedEmployee(emp)}
+                >
+                  <h3 style={{ margin: '0 0 0.5rem 0' }}>{emp.name}</h3>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--color-charcoal-light)' }}>{emp.role || 'ללא תפקיד'}</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--color-charcoal-light)' }}>{emp.phone}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <EmployeeModal 
+            isOpen={isEmployeeModalOpen} 
+            onClose={() => setIsEmployeeModalOpen(false)} 
+            onSave={handleSaveEmployee} 
+          />
+
+          <EmployeeProfileModal
+            isOpen={!!selectedEmployee}
+            onClose={() => setSelectedEmployee(null)}
+            employee={selectedEmployee}
+          />
+        </section>
+      )}
+
+      {activeTab === 'business' && (
+        <section className={`glass-panel ${styles.section}`}>
+          <h2 className={styles.sectionTitle}>הגדרות עסק</h2>
+          <p>בקרוב - לוגו עסק, חשבוניות אוטומטיות ועוד.</p>
+        </section>
+      )}
+
+      {activeTab === 'messages' && (
+        <section className={`glass-panel ${styles.section}`}>
+          <h2 className={styles.sectionTitle}>הודעות אוטומטיות (וואטסאפ / סמס)</h2>
+          <p>בקרוב - הגדרות תזכורות, ברכות יום הולדת ועוד.</p>
+        </section>
+      )}
     </div>
   );
 }

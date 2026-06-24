@@ -10,6 +10,35 @@
   color: var(--color-charcoal-black);
 }
 
+.tabsContainer {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 2px solid rgba(0,0,0,0.05);
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--color-charcoal-light);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -2px; /* Overlap the container border */
+}
+
+.tab:hover {
+  color: var(--color-rose-gold);
+}
+
+.activeTab {
+  color: var(--color-rose-gold);
+  border-bottom-color: var(--color-rose-gold);
+}
+
 .section {
   padding: 1.5rem;
   display: flex;

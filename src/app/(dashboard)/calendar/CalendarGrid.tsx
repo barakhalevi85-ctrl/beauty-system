@@ -108,9 +108,24 @@ export function CalendarGrid({
               const daySchedule = weeklySchedule ? weeklySchedule[dayIndex] : null;
               const isWeeklyClosed = daySchedule && !daySchedule.isOpen;
               
+              let isHourClosed = false;
+              if (daySchedule && daySchedule.isOpen) {
+                const hourNum = parseInt(hour.split(':')[0], 10);
+                const startH = parseInt(daySchedule.start.split(':')[0], 10);
+                const endH = parseInt(daySchedule.end.split(':')[0], 10);
+                if (hourNum < startH || hourNum >= endH) {
+                  isHourClosed = true;
+                }
+              }
+              
               let backgroundColor = 'var(--color-cream-white)';
-              if (isClosedDate) backgroundColor = '#ffe8e8'; // Vacation color (light reddish)
-              else if (isWeeklyClosed) backgroundColor = '#f0f0f0'; // Default closed day (grayish)
+              if (isClosedDate) {
+                backgroundColor = '#ffcccc'; // Vacation color (darker reddish)
+              } else if (isWeeklyClosed) {
+                backgroundColor = '#cce5ff'; // Fully closed day like Saturday (darker blue)
+              } else if (isHourClosed) {
+                backgroundColor = '#e0e0e0'; // Specific closed hours (darker gray)
+              }
 
               return (
                 <div 
@@ -118,7 +133,7 @@ export function CalendarGrid({
                   className={styles.gridCell}
                   onClick={() => !appointment && handleCellClick(dayIndex, hour)}
                   style={{ cursor: appointment ? 'default' : 'pointer', background: backgroundColor }}
-                  title={!appointment ? (isClosedDate || isWeeklyClosed ? 'יום סגור - לחץ לקביעת תור חריג' : 'לחץ לקביעת תור') : ''}
+                  title={!appointment ? (isClosedDate || isWeeklyClosed || isHourClosed ? 'שעה סגורה - לחץ לקביעת תור חריג' : 'לחץ לקביעת תור') : ''}
                 >
                   {appointment && (
                     <AppointmentCard appointment={appointment} hours={hours} services={services} />

@@ -24,6 +24,22 @@ export async function updateWeeklySchedule(weeklySchedule: string) {
   revalidatePath('/', 'layout');
 }
 
+export async function updateBusinessSettings(businessSettings: string) {
+  await prisma.systemSettings.update({
+    where: { id: 'default' },
+    data: { businessSettings }
+  });
+  revalidatePath('/', 'layout');
+}
+
+export async function updateMessageSettings(messageSettings: string) {
+  await prisma.systemSettings.update({
+    where: { id: 'default' },
+    data: { messageSettings }
+  });
+  revalidatePath('/', 'layout');
+}
+
 export async function getClosedDates() {
   return await prisma.closedDate.findMany({
     orderBy: { date: 'asc' },
