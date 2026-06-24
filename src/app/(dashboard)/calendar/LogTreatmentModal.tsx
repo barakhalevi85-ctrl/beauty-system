@@ -8,7 +8,8 @@ export default function LogTreatmentModal({
   appointmentId, 
   clientId, 
   serviceId, 
-  serviceName, 
+  serviceName,
+  servicePrice,
   clientName,
   onClose 
 }: { 
@@ -16,19 +17,41 @@ export default function LogTreatmentModal({
   clientId: string, 
   serviceId?: string, 
   serviceName?: string, 
+  servicePrice?: number,
   clientName: string,
   onClose: () => void 
 }) {
   const [isPending, setIsPending] = useState(false);
   const [activeSeries, setActiveSeries] = useState<any[]>([]);
   const [loadingSeries, setLoadingSeries] = useState(true);
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string>('none');
+  const [paymentAmount, setPaymentAmount] = useState<string>('');
 
   useEffect(() => {
     getClientActiveSeries(clientId).then(series => {
       setActiveSeries(series);
       setLoadingSeries(false);
+      
+      const matchingSeries = series.find(s => s.serviceId === serviceId);
+      if (matchingSeries) {
+        setSelectedSeriesId(matchingSeries.id);
+        setPaymentAmount('');
+      } else {
+        setSelectedSeriesId('none');
+        if (servicePrice) setPaymentAmount(String(servicePrice));
+      }
     });
-  }, [clientId]);
+  }, [clientId, serviceId, servicePrice]);
+
+  const handleSeriesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedSeriesId(val);
+    if (val === 'none') {
+      if (servicePrice) setPaymentAmount(String(servicePrice));
+    } else {
+      setPaymentAmount('');
+    }
+  };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,7 +59,10 @@ export default function LogTreatmentModal({
     const formData = new FormData(e.currentTarget);
     
     try {
-      await logTreatment(formData);
+      const result = await logTreatment(formData);
+      if (result && result.invoiceId) {
+        window.open(`/invoice/${result.invoiceId}`, '_blank');
+      }
       onClose();
     } catch (error) {
       console.error('Failed to log treatment', error);
@@ -63,10 +89,10 @@ export default function LogTreatmentModal({
             {loadingSeries ? (
               <p style={{ fontSize: '0.9rem', color: 'var(--color-charcoal-light)' }}>טוען כרטיסיות...</p>
             ) : (
-              <select name="clientSeriesId" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)' }}>
+              <select name="clientSeriesId" value={selectedSeriesId} onChange={handleSeriesChange} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)' }}>
                 <option value="none">ללא ניקוב כרטיסייה (תשלום מזומן / רגיל)</option>
                 {activeSeries.map(s => (
-                  <option key={s.id} value={s.id} selected={s.serviceId === serviceId}>
+                  <option key={s.id} value={s.id}>
                     {s.serviceName || s.service?.name} ({s.usedTreatments}/{s.totalTreatments} נוצלו)
                   </option>
                 ))}
@@ -80,7 +106,18 @@ export default function LogTreatmentModal({
           </div>
           <div className={styles.formGroup}>
             <label>סכום ששולם היום (אופציונלי, ב-₪):</label>
-            <input type="number" name="paymentAmount" placeholder="למשל: 150" className={styles.input} />
+            <input type="number" name="paymentAmount" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder={`למשל: ${servicePrice || 150}`} className={styles.input} />
+          </div>
+          <div className={styles.formGroup}>
+            <label>אמצעי תשלום:</label>
+            <select name="paymentMethod" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)' }}>
+              <option value="">לא רלוונטי</option>
+              <option value="מזומן">מזומן</option>
+              <option value="אשראי">אשראי</option>
+              <option value="העברה בנקאית">העברה בנקאית</option>
+              <option value="ביט">ביט</option>
+              <option value="פייבוקס">פייבוקס</option>
+            </select>
           </div>
           <div className={styles.formGroup}>
             <label>הערות טכנאי:</label>
@@ -92,7 +129,7 @@ export default function LogTreatmentModal({
           </div>
           <div className={styles.modalActions}>
             <button type="submit" disabled={isPending} className={styles.submitButton}>
-              {isPending ? 'שומר...' : 'שמור ונַקֵב כרטיסייה'}
+              {isPending ? 'שומר...' : (selectedSeriesId === 'none' ? 'שמור תשלום' : 'שמור ונַקֵב כרטיסייה')}
             </button>
             <button type="button" onClick={onClose} className={styles.cancelButton}>
               ביטול

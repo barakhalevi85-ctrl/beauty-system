@@ -110,7 +110,10 @@ export default function SellPackageModal({ clientId, clientGender, services }: {
     const formData = new FormData(e.currentTarget);
     
     try {
-      await sellPackage(formData);
+      const result = await sellPackage(formData);
+      if (result && result.invoiceId) {
+        window.open(`/invoice/${result.invoiceId}`, '_blank');
+      }
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to sell package', error);
@@ -262,6 +265,17 @@ export default function SellPackageModal({ clientId, clientGender, services }: {
                   <label>סה"כ לתשלום (₪):</label>
                   <input type="number" name="pricePaid" value={pricePaid} onChange={handlePriceChange} placeholder="למשל: 1500" className={styles.input} required />
                 </div>
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label>אמצעי תשלום:</label>
+                <select name="paymentMethod" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)' }}>
+                  <option value="מזומן">מזומן</option>
+                  <option value="אשראי">אשראי</option>
+                  <option value="העברה בנקאית">העברה בנקאית</option>
+                  <option value="ביט">ביט</option>
+                  <option value="פייבוקס">פייבוקס</option>
+                </select>
               </div>
               
               <div className={styles.modalActions}>

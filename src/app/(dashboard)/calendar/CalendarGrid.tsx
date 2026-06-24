@@ -35,11 +35,9 @@ export function CalendarGrid({
   const handleCellClick = (dayIndex: number, hourStr: string) => {
     // dayIndex is 0 for Sunday, 1 for Monday, etc.
     const dateOfCell = new Date(weekDates[dayIndex]);
-    const hourNum = parseInt(hourStr.split(':')[0], 10);
-    dateOfCell.setHours(hourNum, 0, 0, 0);
-    
-    // Convert to local timezone before opening modal
-    setSelectedDate(new Date(dateOfCell.getTime() - dateOfCell.getTimezoneOffset() * 60000));
+    const [hStr, mStr] = hourStr.split(':');
+    dateOfCell.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
+    setSelectedDate(dateOfCell);
     setIsModalOpen(true);
   };
 
@@ -66,7 +64,7 @@ export function CalendarGrid({
         </button>
       </div>
 
-      <div className={styles.calendarGrid} style={{ gridTemplateRows: `auto repeat(${hours.length}, 80px)` }}>
+      <div className={styles.calendarGrid} style={{ gridTemplateRows: `auto repeat(${hours.length}, 30px)` }}>
         {/* Top-Right Corner (Empty) */}
         <div className={styles.cornerHeader}></div>
         
@@ -95,7 +93,13 @@ export function CalendarGrid({
         {hours.map((hour) => (
           <React.Fragment key={hour}>
             {/* Row Header - Time */}
-            <div className={styles.timeHeader}>{hour}</div>
+            <div className={styles.timeHeader}>
+              {hour.endsWith(':00') ? (
+                <span style={{ fontWeight: 'bold' }}>{hour}</span>
+              ) : (
+                <span style={{ fontSize: '0.7rem', opacity: 0.5 }}>{hour}</span>
+              )}
+            </div>
             
             {/* Day Cells for this hour */}
             {days.map((day, dayIndex) => {
@@ -110,10 +114,16 @@ export function CalendarGrid({
               
               let isHourClosed = false;
               if (daySchedule && daySchedule.isOpen) {
-                const hourNum = parseInt(hour.split(':')[0], 10);
-                const startH = parseInt(daySchedule.start.split(':')[0], 10);
-                const endH = parseInt(daySchedule.end.split(':')[0], 10);
-                if (hourNum < startH || hourNum >= endH) {
+                const [hStr, mStr] = hour.split(':');
+                const cellTime = parseInt(hStr, 10) + parseInt(mStr, 10) / 60;
+                
+                const [shStr, smStr] = daySchedule.start.split(':');
+                const startTime = parseInt(shStr, 10) + parseInt(smStr, 10) / 60;
+                
+                const [ehStr, emStr] = daySchedule.end.split(':');
+                const endTime = parseInt(ehStr, 10) + parseInt(emStr, 10) / 60;
+                
+                if (cellTime < startTime || cellTime >= endTime) {
                   isHourClosed = true;
                 }
               }

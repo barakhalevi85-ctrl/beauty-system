@@ -36,9 +36,15 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     if (maxHour === 0) maxHour = 24;
   }
 
-  const hours = [];
+  const hours: string[] = [];
   for (let h = minHour; h <= maxHour; h++) {
-    hours.push(`${h.toString().padStart(2, '0')}:00`);
+    const hr = h.toString().padStart(2, '0');
+    hours.push(`${hr}:00`);
+    if (h !== maxHour) {
+      hours.push(`${hr}:15`);
+      hours.push(`${hr}:30`);
+      hours.push(`${hr}:45`);
+    }
   }
 
   const now = params.date ? new Date(params.date) : new Date();
@@ -72,11 +78,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       },
       include: {
         client: true,
-        service: true
+        service: true,
+        treatmentLog: {
+          include: { invoices: true }
+        }
       }
     }),
     prisma.client.findMany({ select: { id: true, name: true } }),
-    prisma.service.findMany({ select: { id: true, name: true } })
+    prisma.service.findMany({ select: { id: true, name: true, price: true, durationMinutes: true } })
   ]);
 
   // Map to UI format
@@ -84,12 +93,14 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     const dayIndex = apt.date.getDay(); // 0 = Sunday
     const dayName = days[dayIndex] || '';
     const hourNum = apt.date.getHours();
-    const hourStr = `${hourNum.toString().padStart(2, '0')}:00`;
+    const minNum = apt.date.getMinutes();
+    const slotMin = Math.floor(minNum / 15) * 15;
+    const hourStr = `${hourNum.toString().padStart(2, '0')}:${slotMin.toString().padStart(2, '0')}`;
     
-    // Default duration: 1 hour if not specified by service
-    let durationHours = 1;
+    // Default duration: 1 hour (4 slots) if not specified by service
+    let durationSlots = 4;
     if (apt.service?.durationMinutes) {
-      durationHours = Math.ceil(apt.service.durationMinutes / 60);
+      durationSlots = Math.ceil(apt.service.durationMinutes / 15);
     }
 
     return {
@@ -102,7 +113,9 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       status: apt.status,
       clientName: apt.client.name,
       treatment: apt.service?.name || 'פגישה',
-      durationHours
+      durationSlots,
+      endHourStr: new Date(apt.date.getTime() + (durationSlots * 15 * 60000)).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
+      treatmentLog: apt.treatmentLog
     };
   });
 

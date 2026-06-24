@@ -118,10 +118,6 @@
   z-index: 5;
 }
 
-.appointment.spanTwoHours {
-  bottom: -76px; /* 80px height + 1px gap - 5px margin approx */
-  z-index: 10;
-}
 
 .appointment:hover {
   transform: translateY(-2px);

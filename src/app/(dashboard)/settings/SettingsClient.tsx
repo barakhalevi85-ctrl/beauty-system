@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import styles from './settings.module.css';
-import { updateWeeklySchedule, addClosedDate, removeClosedDate } from '@/actions/settingsActions';
+import { updateWeeklySchedule, addClosedDate, removeClosedDate, updateBusinessSettings } from '@/actions/settingsActions';
 import { createEmployee } from '@/actions/employeeActions';
 import { EmployeeModal } from '@/components/employees/EmployeeModal';
 import { EmployeeProfileModal } from '@/components/employees/EmployeeProfileModal';
@@ -21,6 +21,17 @@ export default function SettingsClient({
     initialSettings.weeklySchedule ? JSON.parse(initialSettings.weeklySchedule) : {}
   );
   
+  const [businessSettings, setBusinessSettings] = useState<any>(
+    initialSettings.businessSettings ? JSON.parse(initialSettings.businessSettings) : {
+      businessName: '',
+      businessId: '',
+      dealerType: 'AUTHORIZED',
+      address: '',
+      phone: '',
+      nextInvoiceNumber: 1000
+    }
+  );
+
   const [closedDates, setClosedDates] = useState<any[]>(initialClosedDates);
   
   const [newClosedDate, setNewClosedDate] = useState('');
@@ -50,6 +61,22 @@ export default function SettingsClient({
       alert('הגדרות נשמרו בהצלחה!');
     } catch (e) {
       alert('שגיאה בשמירת הגדרות');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBusinessSettingChange = (field: string, value: any) => {
+    setBusinessSettings((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveBusinessSettings = async () => {
+    setSaving(true);
+    try {
+      await updateBusinessSettings(JSON.stringify(businessSettings));
+      alert('הגדרות עסק נשמרו בהצלחה!');
+    } catch (e) {
+      alert('שגיאה בשמירת הגדרות עסק');
     } finally {
       setSaving(false);
     }
@@ -232,8 +259,41 @@ export default function SettingsClient({
 
       {activeTab === 'business' && (
         <section className={`glass-panel ${styles.section}`}>
-          <h2 className={styles.sectionTitle}>הגדרות עסק</h2>
-          <p>בקרוב - לוגו עסק, חשבוניות אוטומטיות ועוד.</p>
+          <h2 className={styles.sectionTitle}>הגדרות עסק וחשבוניות</h2>
+          <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
+            <div>
+              <label>שם העסק</label>
+              <input type="text" value={businessSettings.businessName} onChange={e => handleBusinessSettingChange('businessName', e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', color: 'black' }} />
+            </div>
+            <div>
+              <label>ח.פ / ע.מ / ת.ז (מספר עוסק)</label>
+              <input type="text" value={businessSettings.businessId} onChange={e => handleBusinessSettingChange('businessId', e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', color: 'black' }} />
+            </div>
+            <div>
+              <label>סוג עוסק (עבור קבלות/חשבוניות)</label>
+              <select value={businessSettings.dealerType} onChange={e => handleBusinessSettingChange('dealerType', e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', color: 'black' }}>
+                <option value="AUTHORIZED">עוסק מורשה (מפיק חשבוניות מס קבלה כולל מע"מ)</option>
+                <option value="EXEMPT">עוסק פטור (מפיק קבלות)</option>
+              </select>
+            </div>
+            <div>
+              <label>מספר קבלה/חשבונית הבא</label>
+              <input type="number" value={businessSettings.nextInvoiceNumber} onChange={e => handleBusinessSettingChange('nextInvoiceNumber', parseInt(e.target.value))} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', color: 'black' }} />
+            </div>
+            <div>
+              <label>כתובת (יופיע בקבלה)</label>
+              <input type="text" value={businessSettings.address} onChange={e => handleBusinessSettingChange('address', e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', color: 'black' }} />
+            </div>
+            <div>
+              <label>טלפון (יופיע בקבלה)</label>
+              <input type="text" value={businessSettings.phone} onChange={e => handleBusinessSettingChange('phone', e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', color: 'black' }} />
+            </div>
+          </div>
+          <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button onClick={handleSaveBusinessSettings} disabled={saving} className={styles.saveButton}>
+              {saving ? 'שומר...' : 'שמור הגדרות עסק'}
+            </button>
+          </div>
         </section>
       )}
 

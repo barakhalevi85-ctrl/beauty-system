@@ -20,10 +20,11 @@ export async function sellPackage(formData: FormData) {
   const isSeries = formData.get('treatmentType') === 'series';
   const seriesTotal = isSeries ? Number(formData.get('seriesTotal')) : 1;
   const pricePaid = formData.get('pricePaid') ? Number(formData.get('pricePaid')) : null;
+  const paymentMethod = formData.get('paymentMethod') as string;
 
   const service = await prisma.service.findUnique({ where: { id: serviceId }});
 
-  await prisma.clientSeries.create({
+  const newSeries = await prisma.clientSeries.create({
     data: {
       clientId,
       serviceId,
@@ -33,10 +34,43 @@ export async function sellPackage(formData: FormData) {
     }
   });
 
+  // Generate Invoice if payment was made
+  let invoiceStr = '';
+  let generatedInvoiceId = null;
+  if (pricePaid && pricePaid > 0) {
+    const sysSettings = await prisma.systemSettings.findUnique({ where: { id: 'default' } });
+    const bizSettings = sysSettings?.businessSettings ? JSON.parse(sysSettings.businessSettings) : null;
+    const nextInvoiceNumber = bizSettings?.nextInvoiceNumber || 1000;
+    const dealerType = bizSettings?.dealerType === 'AUTHORIZED' ? 'TAX_RECEIPT' : 'RECEIPT';
+
+    const newInvoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber: nextInvoiceNumber,
+        clientId,
+        amount: pricePaid,
+        type: dealerType,
+        paymentMethod: paymentMethod || 'מזומן',
+        description: `רכישת ${isSeries ? `סדרה של ${seriesTotal} טיפולים` : 'טיפול בודד'}: ${service?.name || 'כללי'}`,
+        clientSeriesId: newSeries.id
+      }
+    });
+
+    if (bizSettings) {
+      bizSettings.nextInvoiceNumber = nextInvoiceNumber + 1;
+      await prisma.systemSettings.update({
+        where: { id: 'default' },
+        data: { businessSettings: JSON.stringify(bizSettings) }
+      });
+    }
+
+    invoiceStr = ` | הופקה ${dealerType === 'TAX_RECEIPT' ? 'חשבונית מס קבלה' : 'קבלה'} מס' ${nextInvoiceNumber}`;
+    generatedInvoiceId = newInvoice.id;
+  }
+
   // Add automatic call log entry
   const typeText = isSeries ? `סדרה של ${seriesTotal} טיפולים` : 'טיפול בודד';
-  const priceText = pricePaid ? ` במחיר ${pricePaid} ₪` : '';
-  const notes = `💰 רכישה חדשה: ${service?.name} (${typeText})${priceText}`;
+  const priceText = pricePaid ? ` במחיר ${pricePaid} ₪ (אמצעי תשלום: ${paymentMethod || 'מזומן'})` : '';
+  const notes = `💰 רכישה חדשה: ${service?.name} (${typeText})${priceText}${invoiceStr}`;
 
   await prisma.callLog.create({
     data: {
@@ -46,6 +80,7 @@ export async function sellPackage(formData: FormData) {
   });
 
   revalidatePath(`/crm/${clientId}`);
+  return { invoiceId: generatedInvoiceId };
 }
 
 export async function updatePackage(formData: FormData) {
@@ -111,6 +146,7 @@ export async function logTreatment(formData: FormData) {
   const technicianNotes = formData.get('technicianNotes') as string;
   const serviceId = formData.get('serviceId') as string;
   const paymentAmount = formData.get('paymentAmount') ? Number(formData.get('paymentAmount')) : 0;
+  const paymentMethod = formData.get('paymentMethod') as string;
   const selectedSeriesId = formData.get('clientSeriesId') as string;
 
   // Find active series for this client and service to punch it
@@ -141,9 +177,10 @@ export async function logTreatment(formData: FormData) {
   }
 
   // Create the treatment log
-  await prisma.treatmentLog.create({
+  const newTreatmentLog = await prisma.treatmentLog.create({
     data: {
       clientId,
+      appointmentId: appointmentId || null,
       clientSeriesId,
       treatmentNumber,
       seriesTotal,
@@ -154,8 +191,40 @@ export async function logTreatment(formData: FormData) {
     }
   });
 
+  let invoiceStr = '';
+  let generatedInvoiceId = null;
+  if (paymentAmount > 0) {
+    const sysSettings = await prisma.systemSettings.findUnique({ where: { id: 'default' } });
+    const bizSettings = sysSettings?.businessSettings ? JSON.parse(sysSettings.businessSettings) : null;
+    const nextInvoiceNumber = bizSettings?.nextInvoiceNumber || 1000;
+    const dealerType = bizSettings?.dealerType === 'AUTHORIZED' ? 'TAX_RECEIPT' : 'RECEIPT';
+
+    const newInvoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber: nextInvoiceNumber,
+        clientId,
+        amount: paymentAmount,
+        type: dealerType,
+        paymentMethod: paymentMethod || 'מזומן',
+        description: `תשלום עבור טיפול: ${bodyArea}`,
+        treatmentLogId: newTreatmentLog.id
+      }
+    });
+
+    if (bizSettings) {
+      bizSettings.nextInvoiceNumber = nextInvoiceNumber + 1;
+      await prisma.systemSettings.update({
+        where: { id: 'default' },
+        data: { businessSettings: JSON.stringify(bizSettings) }
+      });
+    }
+
+    invoiceStr = ` | הופקה ${dealerType === 'TAX_RECEIPT' ? 'חשבונית מס קבלה' : 'קבלה'} מס' ${nextInvoiceNumber}`;
+    generatedInvoiceId = newInvoice.id;
+  }
+
   // Add automatic call log entry
-  const paymentText = paymentAmount > 0 ? ` (שולם: ${paymentAmount} ₪)` : '';
+  const paymentText = paymentAmount > 0 ? ` (שולם: ${paymentAmount} ₪, ${paymentMethod || 'מזומן'}${invoiceStr})` : '';
   const notes = `✅ טיפול בוצע: ${bodyArea} (טיפול ${treatmentNumber} מתוך ${seriesTotal || 1})${paymentText}`;
   await prisma.callLog.create({
     data: { clientId, notes }
@@ -171,6 +240,7 @@ export async function logTreatment(formData: FormData) {
 
   revalidatePath(`/crm/${clientId}`);
   revalidatePath(`/calendar`);
+  return { invoiceId: generatedInvoiceId };
 }
 
 export async function addTreatmentLog(formData: FormData) {
@@ -305,4 +375,98 @@ export async function deleteTreatmentLog(id: string, clientId: string) {
     where: { id }
   });
   revalidatePath(`/crm/${clientId}`);
+}
+
+export async function refundCompletedAppointment(appointmentId: string) {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: { treatmentLog: { include: { invoices: true } } }
+  });
+
+  if (!appointment || !appointment.treatmentLog) {
+    throw new Error('Treatment log not found for this appointment');
+  }
+
+  const { treatmentLog } = appointment;
+  let notesStr = `🔄 ביטול תור / זיכוי טיפול: ${treatmentLog.bodyArea}`;
+  let generatedInvoiceId = null;
+
+  if (treatmentLog.invoices && treatmentLog.invoices.length > 0) {
+    const originalInvoice = treatmentLog.invoices[0];
+    
+    // Disconnect the invoice from the treatment log before deleting the log
+    for (const inv of treatmentLog.invoices) {
+      await prisma.invoice.update({
+        where: { id: inv.id },
+        data: { treatmentLogId: null }
+      });
+    }
+
+    if (originalInvoice.amount > 0) {
+      const sysSettings = await prisma.systemSettings.findUnique({ where: { id: 'default' } });
+      const bizSettings = sysSettings?.businessSettings ? JSON.parse(sysSettings.businessSettings) : null;
+      const nextInvoiceNumber = bizSettings?.nextInvoiceNumber || 1000;
+
+      const newInvoice = await prisma.invoice.create({
+        data: {
+          invoiceNumber: nextInvoiceNumber,
+          clientId: treatmentLog.clientId,
+          amount: originalInvoice.amount,
+          type: 'CREDIT_INVOICE',
+          paymentMethod: originalInvoice.paymentMethod,
+          description: `זיכוי עבור טיפול שבוטל (מקור: ${originalInvoice.invoiceNumber})`,
+        }
+      });
+
+      if (bizSettings) {
+        bizSettings.nextInvoiceNumber = nextInvoiceNumber + 1;
+        await prisma.systemSettings.update({
+          where: { id: 'default' },
+          data: { businessSettings: JSON.stringify(bizSettings) }
+        });
+      }
+
+      generatedInvoiceId = newInvoice.id;
+      notesStr += ` | הופקה חשבונית זיכוי מס' ${nextInvoiceNumber} על סך ${originalInvoice.amount} ₪`;
+    }
+  }
+
+  // Restore client series punch
+  if (treatmentLog.clientSeriesId) {
+    const series = await prisma.clientSeries.findUnique({ where: { id: treatmentLog.clientSeriesId } });
+    if (series) {
+      await prisma.clientSeries.update({
+        where: { id: series.id },
+        data: {
+          usedTreatments: Math.max(0, series.usedTreatments - 1),
+          isCompleted: false // Unmark completion because we refunded a punch
+        }
+      });
+      notesStr += ` | ניקוב טיפול הוחזר לכרטיסייה`;
+    }
+  }
+
+  // Create CallLog
+  await prisma.callLog.create({
+    data: {
+      clientId: treatmentLog.clientId,
+      notes: notesStr
+    }
+  });
+
+  // Delete TreatmentLog
+  await prisma.treatmentLog.delete({
+    where: { id: treatmentLog.id }
+  });
+
+  // Revert Appointment status
+  await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: { status: 'מתוכנן' }
+  });
+
+  revalidatePath(`/crm/${treatmentLog.clientId}`);
+  revalidatePath(`/calendar`);
+
+  return { invoiceId: generatedInvoiceId };
 }

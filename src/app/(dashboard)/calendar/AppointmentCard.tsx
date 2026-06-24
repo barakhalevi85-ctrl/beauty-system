@@ -10,23 +10,21 @@ export default function AppointmentCard({ appointment, hours, services }: { appo
   const [isLogging, setIsLogging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  const startHourIndex = hours.indexOf(appointment.hour);
-  const endHour = appointment.durationHours >= 2 
-    ? hours[startHourIndex + 2] || '20:00'
-    : hours[startHourIndex + 1] || '19:00';
-
+  const endHour = appointment.endHourStr || hours[hours.indexOf(appointment.hour) + 1] || '20:00';
   const isCompleted = appointment.status === 'completed';
+  const slots = appointment.durationSlots || 4; // Default to 1 hour (4 slots)
 
   return (
     <>
       <div 
-        className={`${styles.appointment} ${appointment.durationHours >= 2 ? styles.spanTwoHours : ''}`}
+        className={styles.appointment}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{ 
-          position: 'relative', 
+          position: 'absolute', 
           opacity: isCompleted ? 0.7 : 1,
-          border: isCompleted ? '2px solid green' : undefined
+          border: isCompleted ? '2px solid green' : undefined,
+          height: `calc(100% * ${slots} + ${slots - 1}px - 8px)`
         }}
       >
         <div className={styles.appointmentTitle}>{appointment.clientName}</div>
@@ -101,16 +99,21 @@ export default function AppointmentCard({ appointment, hours, services }: { appo
         />
       )}
 
-      {isLogging && (
-        <LogTreatmentModal 
-          appointmentId={appointment.id}
-          clientId={appointment.clientId}
-          serviceId={appointment.serviceId}
-          serviceName={appointment.treatment}
-          clientName={appointment.clientName}
-          onClose={() => setIsLogging(false)}
-        />
-      )}
+      {isLogging && (() => {
+        const service = services.find(s => s.id === appointment.serviceId);
+        const servicePrice = service?.price || 0;
+        return (
+          <LogTreatmentModal 
+            appointmentId={appointment.id}
+            clientId={appointment.clientId}
+            serviceId={appointment.serviceId}
+            serviceName={appointment.treatment}
+            servicePrice={servicePrice}
+            clientName={appointment.clientName}
+            onClose={() => setIsLogging(false)}
+          />
+        );
+      })()}
     </>
   );
 }

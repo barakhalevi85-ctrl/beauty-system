@@ -44,6 +44,10 @@ export function AddAppointmentModal({
     }
   }
 
+  const initialDateStr = initialDate 
+    ? `${initialDate.getFullYear()}-${String(initialDate.getMonth() + 1).padStart(2, '0')}-${String(initialDate.getDate()).padStart(2, '0')}`
+    : '';
+
   return (
     <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(5px)' }} onClick={onClose}>
       <div className="glass-panel" style={{ width: '400px', maxWidth: '90%' }} onClick={(e) => e.stopPropagation()}>
@@ -70,11 +74,11 @@ export function AddAppointmentModal({
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', marginBottom: '0.5rem' }}>תאריך</label>
-              <input type="date" name="date" required defaultValue={initialDate ? initialDate.toISOString().split('T')[0] : ''} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: 'black' }} />
+              <input type="date" name="date" required defaultValue={initialDateStr} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: 'black' }} />
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', marginBottom: '0.5rem' }}>שעה</label>
-              <input type="time" name="time" required defaultValue={initialDate ? initialDate.toTimeString().substring(0, 5) : ''} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: 'black' }} />
+              <input type="time" name="time" step="900" required defaultValue={initialDate ? initialDate.toTimeString().substring(0, 5) : ''} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: 'black' }} />
             </div>
           </div>
           

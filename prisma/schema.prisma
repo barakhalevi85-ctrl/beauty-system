@@ -29,6 +29,7 @@ model Client {
   appointments             Appointment[]
   callLogs                 CallLog[]
   clientSeries             ClientSeries[]
+  invoices                 Invoice[]
 }
 
 model ClientSeries {
@@ -45,6 +46,7 @@ model ClientSeries {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   treatmentLogs   TreatmentLog[]
+  invoices        Invoice[]
 }
 
 model TreatmentLog {
@@ -53,6 +55,8 @@ model TreatmentLog {
   client          Client        @relation(fields: [clientId], references: [id])
   clientSeriesId  String?
   clientSeries    ClientSeries? @relation(fields: [clientSeriesId], references: [id], onDelete: SetNull)
+  appointmentId   String?       @unique
+  appointment     Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   treatmentNumber Int
   seriesTotal     Int?
   bodyArea        String
@@ -60,18 +64,20 @@ model TreatmentLog {
   technicianNotes String?
   imageUrls       String?
   createdAt       DateTime      @default(now())
+  invoices        Invoice[]
 }
 
 model Appointment {
-  id          String   @id @default(uuid())
-  clientId    String
-  client      Client   @relation(fields: [clientId], references: [id])
-  serviceId   String?
-  service     Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  serviceName String?  // Historical name snapshot
-  date        DateTime
-  status      String
-  createdAt   DateTime @default(now())
+  id           String        @id @default(uuid())
+  clientId     String
+  client       Client        @relation(fields: [clientId], references: [id])
+  serviceId    String?
+  service      Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  serviceName  String?  // Historical name snapshot
+  date         DateTime
+  status       String
+  treatmentLog TreatmentLog?
+  createdAt    DateTime      @default(now())
 }
 
 model Service {
@@ -144,3 +150,21 @@ model EmployeeLeave {
   notes       String?
   createdAt   DateTime @default(now())
 }
+
+model Invoice {
+  id             String        @id @default(uuid())
+  invoiceNumber  Int           // Assigned manually based on business settings
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id])
+  amount         Float
+  type           String        // "RECEIPT" or "TAX_RECEIPT"
+  paymentMethod  String?       // Cash, Credit, Transfer, Bit, Paybox
+  date           DateTime      @default(now())
+  description    String
+  treatmentLogId String?
+  treatmentLog   TreatmentLog? @relation(fields: [treatmentLogId], references: [id])
+  clientSeriesId String?
+  clientSeries   ClientSeries? @relation(fields: [clientSeriesId], references: [id])
+  createdAt      DateTime      @default(now())
+}
+

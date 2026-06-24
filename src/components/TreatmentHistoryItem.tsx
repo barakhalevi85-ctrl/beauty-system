@@ -77,6 +77,26 @@ export default function TreatmentHistoryItem({ log }: { log: any }) {
               </div>
             </div>
           )}
+
+          {log.invoices && log.invoices.length > 0 && (
+            <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.8)', border: '1px solid var(--color-rose-gold)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: 'bold' }}>
+                  {log.invoices[0].type === 'TAX_RECEIPT' ? 'חשבונית מס קבלה' : 'קבלה'} מס׳ {log.invoices[0].invoiceNumber}
+                </p>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.9rem', color: 'var(--color-charcoal-light)' }}>
+                  סכום: ₪{log.invoices[0].amount} | אמצעי תשלום: {log.invoices[0].paymentMethod}
+                </p>
+              </div>
+              <a 
+                href={`/invoice/${log.invoices[0].id}`} 
+                target="_blank" 
+                style={{ padding: '0.5rem 1rem', background: 'var(--color-charcoal)', color: 'white', borderRadius: '4px', textDecoration: 'none' }}
+              >
+                הצג מסמך
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>

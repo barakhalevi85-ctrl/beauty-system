@@ -15,10 +15,11 @@ async function getClientWithLogs(id: string) {
     where: { id },
     include: {
       clientSeries: {
-        include: { service: true },
+        include: { service: true, invoices: true },
         orderBy: { createdAt: 'desc' },
       },
       treatmentLogs: {
+        include: { invoices: true },
         orderBy: { createdAt: 'desc' },
       },
       callLogs: {
@@ -82,6 +83,15 @@ export default async function CRMPage({ params }: { params: Promise<{ id: string
                       : 'טיפול בודד'
                     } | נרכש ב: {new Date(series.createdAt).toLocaleDateString('he-IL')} | שולם: ₪{series.pricePaid || 0}
                   </p>
+                  {series.invoices && series.invoices.length > 0 && (
+                    <a 
+                      href={`/invoice/${series.invoices[0].id}`} 
+                      target="_blank" 
+                      style={{ display: 'inline-block', marginTop: '0.5rem', padding: '0.25rem 0.5rem', background: 'rgba(0,0,0,0.05)', border: '1px solid var(--color-rose-gold)', color: 'var(--color-charcoal)', borderRadius: '4px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold' }}
+                    >
+                      📄 הצג {series.invoices[0].type === 'TAX_RECEIPT' ? 'חשבונית מס קבלה' : 'קבלה'} ({series.invoices[0].invoiceNumber})
+                    </a>
+                  )}
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: series.usedTreatments >= series.totalTreatments ? 'green' : 'var(--color-rose-gold)' }}>
