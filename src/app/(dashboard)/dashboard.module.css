@@ -45,3 +45,24 @@
   flex: 1;
   overflow-y: auto;
 }
+
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+    padding-bottom: 60px; /* Space for bottom nav */
+  }
+  
+  .mainContent {
+    width: 100%;
+  }
+
+  .header {
+    padding: 0 1rem;
+    height: 60px;
+    justify-content: space-between;
+  }
+
+  .content {
+    padding: 1rem;
+  }
+}

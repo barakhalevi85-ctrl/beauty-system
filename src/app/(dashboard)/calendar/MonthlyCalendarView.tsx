@@ -107,11 +107,29 @@ export function MonthlyCalendarView({
               </div>
               
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                {dayAppointments.map(apt => (
-                  <div key={apt.id} style={{ fontSize: '0.7rem', background: 'rgba(183, 110, 121, 0.2)', padding: '2px 4px', borderRadius: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {apt.hour} - {apt.clientName}
-                  </div>
-                ))}
+                {dayAppointments.map(apt => {
+                  const isCompleted = apt.status === 'completed';
+                  return (
+                    <div 
+                      key={apt.id} 
+                      style={{ 
+                        fontSize: '0.7rem', 
+                        background: isCompleted ? 'rgba(40, 167, 69, 0.2)' : 'rgba(183, 110, 121, 0.2)', 
+                        padding: '2px 4px', 
+                        borderRadius: '4px', 
+                        whiteSpace: 'nowrap', 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis',
+                        color: isCompleted ? '#1e7e34' : 'inherit',
+                        border: isCompleted ? '1px solid rgba(40, 167, 69, 0.4)' : 'none'
+                      }}
+                      title={`${apt.clientName} - ${apt.treatment} (${isCompleted ? 'הושלם/שולם' : 'מתוכנן'})`}
+                    >
+                      {isCompleted && <span style={{ fontWeight: 'bold', marginRight: '2px' }}>✓</span>}
+                      {apt.hour} - {apt.clientName}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );

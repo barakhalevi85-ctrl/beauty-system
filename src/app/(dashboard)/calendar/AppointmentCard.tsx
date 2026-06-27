@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import styles from './calendar.module.css';
 import LogTreatmentModal from './LogTreatmentModal';
 import { EditAppointmentModal } from '@/components/EditAppointmentModal';
+import ClientProfileModal from '@/components/ClientProfileModal';
 
 export default function AppointmentCard({ appointment, hours, services }: { appointment: any, hours: string[], services: any[] }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLogging, setIsLogging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const endHour = appointment.endHourStr || hours[hours.indexOf(appointment.hour) + 1] || '20:00';
   const isCompleted = appointment.status === 'completed';
@@ -18,6 +20,7 @@ export default function AppointmentCard({ appointment, hours, services }: { appo
     <>
       <div 
         className={styles.appointment}
+        title={`${appointment.clientName} - ${appointment.treatment} (${appointment.hour} - ${endHour})`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{ 
@@ -66,28 +69,52 @@ export default function AppointmentCard({ appointment, hours, services }: { appo
         )}
 
         {isHovered && (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditing(true);
-            }}
-            title="ערוך תור"
-            style={{
-              position: 'absolute',
-              top: '5px',
-              left: isCompleted ? '25px' : '5px', // Avoid overlapping with checkmark
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '1.2rem',
-              transition: 'transform 0.2s',
-              zIndex: 10
-            }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.2)'} 
-            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            ✏️
-          </button>
+          <>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowProfileModal(true);
+              }}
+              title="כרטיס לקוח"
+              style={{
+                position: 'absolute',
+                top: '5px',
+                left: isCompleted ? '25px' : '5px', // First icon
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1.2rem',
+                transition: 'transform 0.2s',
+                zIndex: 10
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.2)'} 
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              👤
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+              title="ערוך תור"
+              style={{
+                position: 'absolute',
+                top: '5px',
+                left: isCompleted ? '50px' : '30px', // Second icon
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '1.2rem',
+                transition: 'transform 0.2s',
+                zIndex: 10
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.2)'} 
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              ✏️
+            </button>
+          </>
         )}
       </div>
 
@@ -114,6 +141,13 @@ export default function AppointmentCard({ appointment, hours, services }: { appo
           />
         );
       })()}
+
+      {showProfileModal && (
+        <ClientProfileModal 
+          clientId={appointment.clientId} 
+          onClose={() => setShowProfileModal(false)} 
+        />
+      )}
     </>
   );
 }

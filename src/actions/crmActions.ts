@@ -470,3 +470,27 @@ export async function refundCompletedAppointment(appointmentId: string) {
 
   return { invoiceId: generatedInvoiceId };
 }
+
+export async function getClientFullProfile(clientId: string) {
+  return await prisma.client.findUnique({
+    where: { id: clientId },
+    include: {
+      clientSeries: {
+        include: { service: true, invoices: true },
+        orderBy: { createdAt: 'desc' },
+      },
+      treatmentLogs: {
+        include: { invoices: true },
+        orderBy: { createdAt: 'desc' },
+      },
+      callLogs: {
+        orderBy: { createdAt: 'desc' },
+      },
+      appointments: {
+        where: { date: { gte: new Date() } },
+        orderBy: { date: 'asc' },
+        include: { service: true }
+      }
+    }
+  });
+}

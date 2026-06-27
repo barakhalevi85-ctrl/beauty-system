@@ -62,7 +62,7 @@ export default async function CRMPage({ params }: { params: Promise<{ id: string
         <SellPackageModal clientId={client.id} clientGender={client.gender || null} services={services} />
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
         <section>
           <h2 className={styles.sectionTitle}>כרטיסיות פתוחות / סדרות</h2>
           

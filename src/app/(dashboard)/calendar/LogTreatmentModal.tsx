@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../crm/crm.module.css';
 import { logTreatment, getClientActiveSeries } from '@/actions/crmActions';
+import ClientProfileModal from '@/components/ClientProfileModal';
 
 export default function LogTreatmentModal({ 
   appointmentId, 
@@ -26,6 +27,7 @@ export default function LogTreatmentModal({
   const [loadingSeries, setLoadingSeries] = useState(true);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string>('none');
   const [paymentAmount, setPaymentAmount] = useState<string>('');
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     getClientActiveSeries(clientId).then(series => {
@@ -75,8 +77,36 @@ export default function LogTreatmentModal({
   return (
     <div className={styles.modalOverlay} style={{ zIndex: 1000, position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
       <div className={`${styles.modalContent} glass-panel`} style={{ maxHeight: '90vh', overflowY: 'auto', background: 'white' }} onClick={(e) => e.stopPropagation()}>
-        <h2>תיעוד טיפול רפואי - {clientName}</h2>
-        <p style={{ color: 'var(--color-charcoal-light)' }}>הטיפול: {serviceName || 'כללי'}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+          <div>
+            <h2 style={{ margin: '0 0 0.5rem 0' }}>תיעוד טיפול רפואי - {clientName}</h2>
+            <p style={{ color: 'var(--color-charcoal-light)', margin: 0 }}>הטיפול: {serviceName || 'כללי'}</p>
+          </div>
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              setShowProfileModal(true);
+            }}
+            title="מעבר לכרטיס לקוח מלא"
+            style={{ 
+              background: 'var(--color-charcoal)', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '8px', 
+              padding: '0.5rem 1rem', 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              fontSize: '0.9rem',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+          >
+            <span>👤</span>
+            כרטיס לקוח
+          </button>
+        </div>
         
         <form onSubmit={handleSubmit} className={styles.form}>
           <input type="hidden" name="appointmentId" value={appointmentId} />
@@ -105,12 +135,32 @@ export default function LogTreatmentModal({
             <input type="number" step="0.1" name="fluenceJoule" required placeholder="למשל: 14" className={styles.input} />
           </div>
           <div className={styles.formGroup}>
-            <label>סכום ששולם היום (אופציונלי, ב-₪):</label>
-            <input type="number" name="paymentAmount" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} placeholder={`למשל: ${servicePrice || 150}`} className={styles.input} />
+            <label>סכום לתשלום:</label>
+            <input 
+              type="number" 
+              name="paymentAmount" 
+              value={paymentAmount} 
+              onChange={(e) => setPaymentAmount(e.target.value)} 
+              placeholder={`למשל: ${servicePrice || 150}`} 
+              className={styles.input} 
+              disabled={selectedSeriesId !== 'none'}
+              style={{ backgroundColor: selectedSeriesId !== 'none' ? '#f0f0f0' : 'white', cursor: selectedSeriesId !== 'none' ? 'not-allowed' : 'text' }}
+            />
           </div>
           <div className={styles.formGroup}>
             <label>אמצעי תשלום:</label>
-            <select name="paymentMethod" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)' }}>
+            <select 
+              name="paymentMethod" 
+              disabled={selectedSeriesId !== 'none'}
+              style={{ 
+                width: '100%', 
+                padding: '0.75rem', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(0,0,0,0.2)',
+                backgroundColor: selectedSeriesId !== 'none' ? '#f0f0f0' : 'white',
+                cursor: selectedSeriesId !== 'none' ? 'not-allowed' : 'pointer'
+              }}
+            >
               <option value="">לא רלוונטי</option>
               <option value="מזומן">מזומן</option>
               <option value="אשראי">אשראי</option>
@@ -137,6 +187,13 @@ export default function LogTreatmentModal({
           </div>
         </form>
       </div>
+
+      {showProfileModal && (
+        <ClientProfileModal 
+          clientId={clientId} 
+          onClose={() => setShowProfileModal(false)} 
+        />
+      )}
     </div>
   );
 }

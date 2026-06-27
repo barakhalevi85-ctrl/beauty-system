@@ -128,8 +128,7 @@ export default function SettingsClient({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {daysOfWeek.map((dayName, idx) => {
             const dayData = weeklySchedule[idx] || { isOpen: false, start: '09:00', end: '18:00' };
-            return (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px' }}>
+              <div key={idx} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px' }}>
                 <div style={{ width: '80px', fontWeight: 'bold' }}>יום {dayName}</div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                   <input 
@@ -228,7 +227,7 @@ export default function SettingsClient({
           {initialEmployees.length === 0 ? (
             <p>אין עובדים מוגדרים כרגע במערכת.</p>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
               {initialEmployees.map(emp => (
                 <div 
                   key={emp.id} 
@@ -260,7 +259,7 @@ export default function SettingsClient({
       {activeTab === 'business' && (
         <section className={`glass-panel ${styles.section}`}>
           <h2 className={styles.sectionTitle}>הגדרות עסק וחשבוניות</h2>
-          <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
+          <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
             <div>
               <label>שם העסק</label>
               <input type="text" value={businessSettings.businessName} onChange={e => handleBusinessSettingChange('businessName', e.target.value)} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', color: 'black' }} />

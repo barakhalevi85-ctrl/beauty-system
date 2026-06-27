@@ -56,3 +56,52 @@
   color: var(--color-rose-gold-light);
   border-right-color: var(--color-rose-gold);
 }
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    flex-direction: row;
+    z-index: 1000;
+  }
+  
+  .logo { 
+    display: none; 
+  }
+  
+  .nav { 
+    padding: 0; 
+    width: 100%;
+  }
+  
+  .nav ul {
+    display: flex;
+    justify-content: space-around;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .nav li {
+    flex: 1;
+  }
+  
+  .nav li a {
+    padding: 0.8rem 0.2rem;
+    font-size: 0.85rem;
+    border-right: none;
+    border-top: 3px solid transparent;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .nav li.active a {
+    border-right-color: transparent;
+    border-top-color: var(--color-rose-gold);
+    background-color: rgba(183, 110, 121, 0.2);
+  }
+}
