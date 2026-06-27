@@ -128,6 +128,7 @@ export default function SettingsClient({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {daysOfWeek.map((dayName, idx) => {
             const dayData = weeklySchedule[idx] || { isOpen: false, start: '09:00', end: '18:00' };
+            return (
               <div key={idx} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px' }}>
                 <div style={{ width: '80px', fontWeight: 'bold' }}>יום {dayName}</div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
