@@ -121,7 +121,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className={styles.calendarContainer}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ margin: 0, color: 'var(--color-charcoal-black)' }}>יומן תורים</h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <Link href={`/calendar?view=weekly&date=${now.toISOString().split('T')[0]}`} style={{ padding: '0.5rem 1rem', background: viewType === 'weekly' ? 'var(--color-rose-gold)' : 'var(--color-charcoal-light)', color: 'white', borderRadius: '4px', textDecoration: 'none' }}>תצוגה שבועית</Link>

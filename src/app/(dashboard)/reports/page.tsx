@@ -1,8 +1,7 @@
+import ReportsClient from './ReportsClient';
+
+export const dynamic = 'force-dynamic';
+
 export default function ReportsPage() {
-  return (
-    <div>
-      <h1>דוחות וחשבוניות</h1>
-      <p style={{marginTop: '1rem'}}>מודול פיננסי. בשלבי פיתוח...</p>
-    </div>
-  );
+  return <ReportsClient />;
 }

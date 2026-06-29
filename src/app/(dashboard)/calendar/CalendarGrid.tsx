@@ -52,8 +52,8 @@ export function CalendarGrid({
   };
 
   return (
-    <div className={styles.glassPanel}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', padding: '1rem' }}>
+    <div className={styles.glassPanel} style={{ padding: '0.5rem 1.5rem 1.5rem 1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', padding: '0.5rem 0' }}>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={() => navTo(7)} style={{ padding: '0.5rem 1rem', background: 'var(--color-charcoal-light)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>שבוע הבא ❯</button>
           <button onClick={goToToday} style={{ padding: '0.5rem 1rem', background: 'var(--color-rose-gold)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>השבוע הנוכחי</button>
@@ -70,12 +70,21 @@ export function CalendarGrid({
         
         {/* Days Headers */}
         {days.map((day, index) => {
-          const { hebrewDateStr, holidays } = getHebrewDateAndHolidays(weekDates[index]);
+          const cellDate = weekDates[index];
+          const today = new Date();
+          const isToday = cellDate.toDateString() === today.toDateString();
+          const { hebrewDateStr, holidays } = getHebrewDateAndHolidays(cellDate);
           return (
-            <div key={day} className={styles.dayHeader} style={{ flexDirection: 'column', gap: '0.2rem', padding: '0.5rem 0' }}>
-              <div>{day}</div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 'normal', opacity: 0.8 }}>
-                {weekDates[index].toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}
+            <div key={day} className={styles.dayHeader} style={{ 
+              flexDirection: 'column', gap: '0.2rem', padding: '0.5rem 0',
+              background: isToday ? 'rgba(183, 110, 121, 0.15)' : 'inherit',
+              borderBottom: isToday ? '3px solid var(--color-rose-gold)' : 'none'
+            }}>
+              <div style={{ fontWeight: isToday ? 'bold' : 'normal', color: isToday ? 'var(--color-rose-gold)' : 'inherit' }}>
+                {day}
+              </div>
+              <div style={{ fontSize: '0.85rem', fontWeight: isToday ? 'bold' : 'normal', opacity: 0.8, color: isToday ? 'var(--color-rose-gold)' : 'inherit' }}>
+                {cellDate.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' })}
               </div>
               <div style={{ fontSize: '0.75rem', fontWeight: 'normal', color: 'var(--color-charcoal-light)' }}>
                 {hebrewDateStr}

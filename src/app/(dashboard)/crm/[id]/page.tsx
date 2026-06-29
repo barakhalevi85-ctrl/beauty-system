@@ -8,6 +8,7 @@ import EditableCallLog from '@/components/EditableCallLog';
 import DeleteClientButton from '@/components/DeleteClientButton';
 import TreatmentHistoryItem from '@/components/TreatmentHistoryItem';
 import FutureAppointmentItem from '@/components/FutureAppointmentItem';
+import ClientProfileHeader from '@/components/ClientProfileHeader';
 import { notFound } from 'next/navigation';
 
 async function getClientWithLogs(id: string) {
@@ -46,19 +47,7 @@ export default async function CRMPage({ params }: { params: Promise<{ id: string
   return (
     <div className={styles.container}>
       <header className={`${styles.header} glass-panel`}>
-        <div className={styles.clientInfo}>
-          <h1>תיק לקוח: {client.name} {client.lastName}</h1>
-          <p>תעודת זהות: {client.idNumber || client.id}</p>
-          <div className={styles.contactDetails}>
-            <span className={styles.contactItem}>📞 {client.phone}</span>
-            {client.email && <span className={styles.contactItem}>✉️ {client.email}</span>}
-            <span className={styles.contactItem}>📍 {client.address || 'לא צוינה כתובת'}</span>
-          </div>
-          <div style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--color-charcoal-light)' }}>
-            <p><strong>מצב רפואי / הערות:</strong> {client.medicalNotes || 'אין'}</p>
-            <p><strong>הצהרת בריאות:</strong> {client.healthDeclarationSent ? 'נשלחה ✅' : 'לא נשלחה ❌'}</p>
-          </div>
-        </div>
+        <ClientProfileHeader client={client} />
         <SellPackageModal clientId={client.id} clientGender={client.gender || null} services={services} />
       </header>
 

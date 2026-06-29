@@ -6,12 +6,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .title {
   margin-bottom: 0;
-  font-size: 2.25rem;
+  font-size: 1.5rem;
   color: var(--color-charcoal-black);
 }
 
@@ -46,13 +46,13 @@
 }
 
 .categorySection {
-  margin-bottom: 3.5rem;
+  margin-bottom: 2rem;
 }
 
 .categoryTitle {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   color: var(--color-charcoal-black);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   border-bottom: 2px solid var(--color-rose-gold-light);
   padding-bottom: 0.5rem;
   display: inline-block;
@@ -62,14 +62,14 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .card {
-  padding: 1.5rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   overflow: hidden;
@@ -98,14 +98,14 @@
 }
 
 .serviceName {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--color-charcoal-black);
   margin: 0;
 }
 
 .price {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--color-rose-gold);
 }

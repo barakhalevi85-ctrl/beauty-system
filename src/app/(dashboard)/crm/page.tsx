@@ -35,17 +35,17 @@ export default async function CRMListPage(props: { searchParams: Promise<{ tab?:
 
         <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--color-glass-border)', paddingBottom: '0.5rem' }}>
           <Link href="?tab=active" style={{
-            padding: '0.5rem 1rem', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold',
+            padding: '0.4rem 0.8rem', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem',
             background: tab === 'active' ? 'var(--color-rose-gold)' : 'transparent',
             color: tab === 'active' ? 'white' : 'var(--color-charcoal-light)'
           }}>לקוחות פעילים</Link>
           <Link href="?tab=inactive" style={{
-            padding: '0.5rem 1rem', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold',
+            padding: '0.4rem 0.8rem', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem',
             background: tab === 'inactive' ? 'var(--color-rose-gold)' : 'transparent',
             color: tab === 'inactive' ? 'white' : 'var(--color-charcoal-light)'
           }}>לקוחות לא פעילים</Link>
           <Link href="?tab=all" style={{
-            padding: '0.5rem 1rem', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold',
+            padding: '0.4rem 0.8rem', borderRadius: '4px', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem',
             background: tab === 'all' ? 'var(--color-rose-gold)' : 'transparent',
             color: tab === 'all' ? 'white' : 'var(--color-charcoal-light)'
           }}>כל הלקוחות</Link>

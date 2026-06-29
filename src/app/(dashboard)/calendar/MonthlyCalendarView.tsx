@@ -45,11 +45,12 @@ export function MonthlyCalendarView({
     d.setDate(d.getDate() + 1);
   }
 
+  const today = new Date();
   const daysOfWeek = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
   return (
-    <div className={styles.glassPanel}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', padding: '1rem' }}>
+    <div className={styles.glassPanel} style={{ padding: '0.5rem 1.5rem 1.5rem 1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', padding: '0.5rem 0' }}>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={() => {
             const d = new Date(current);
@@ -88,6 +89,8 @@ export function MonthlyCalendarView({
           // For monthly view, we just show appointment counts to keep it clean
           const dayAppointments = mappedAppointments.filter(apt => apt.dateStr === date.toDateString());
 
+          const isToday = date.toDateString() === today.toDateString();
+
           return (
             <div 
               key={idx} 
@@ -98,12 +101,19 @@ export function MonthlyCalendarView({
                 opacity: isCurrentMonth ? 1 : 0.5,
                 cursor: 'pointer',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                border: isToday ? '2px solid var(--color-rose-gold)' : '1px solid transparent'
               }}
               onClick={() => router.push(`/calendar?view=weekly&date=${date.toISOString().split('T')[0]}`)}
             >
               <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: isClosedDate || isWeeklyClosed ? 'var(--color-charcoal-light)' : 'black' }}>
-                {date.getDate()}
+                {isToday ? (
+                  <span style={{ background: 'var(--color-rose-gold)', color: 'white', borderRadius: '50%', padding: '2px 8px', display: 'inline-block' }}>
+                    {date.getDate()}
+                  </span>
+                ) : (
+                  date.getDate()
+                )}
               </div>
               
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>

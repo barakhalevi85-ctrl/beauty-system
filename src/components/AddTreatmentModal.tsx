@@ -7,10 +7,12 @@ export function AddTreatmentModal({ onClose, fixedCategory }: { onClose: () => v
   const [loading, setLoading] = useState(false);
   const [packageSelection, setPackageSelection] = useState('single'); // 'single' or 'series'
   const [seriesCount, setSeriesCount] = useState(10);
+  const [price, setPrice] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('');
   
   // Categories State
   const [categories, setCategories] = useState(['נשים', 'גברים']);
-  const [selectedCategory, setSelectedCategory] = useState('נשים');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
@@ -26,11 +28,9 @@ export function AddTreatmentModal({ onClose, fixedCategory }: { onClose: () => v
         const res = await getUniqueTreatmentOptions();
         if (res.categories.length > 0) {
           setCategories(Array.from(new Set([...res.categories, ...categories])));
-          setSelectedCategory(res.categories[0]);
         }
         if (res.treatmentNames.length > 0) {
           setTreatmentNames(Array.from(new Set([...res.treatmentNames, ...treatmentNames])));
-          setSelectedTreatmentName(res.treatmentNames[0]);
         }
       } catch (err) {
         console.error(err);
@@ -75,14 +75,24 @@ export function AddTreatmentModal({ onClose, fixedCategory }: { onClose: () => v
       finalTreatmentName = newTreatmentInput.trim();
     }
     
+    if (!finalCategory || !finalTreatmentName) {
+      alert('יש לבחור או להזין קטגוריה ושם טיפול');
+      setLoading(false);
+      return;
+    }
+    
     try {
       await addService({
         category: finalCategory,
         name: finalTreatmentName,
         packageType: finalPackageType,
-        price: Number(formData.get('price')),
-        durationMinutes: Number(formData.get('durationMinutes')),
+        price: Number(price),
+        durationMinutes: Number(durationMinutes),
       });
+      // Clear form before close just in case
+      setPrice('');
+      setDurationMinutes('');
+      setNewTreatmentInput('');
       onClose();
     } catch (err) {
       console.error(err);
@@ -126,6 +136,7 @@ export function AddTreatmentModal({ onClose, fixedCategory }: { onClose: () => v
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: '#000', fontSize: '1rem' }}
                   >
+                    <option value="" disabled>בחר/י קטגוריה...</option>
                     {categories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
@@ -165,6 +176,7 @@ export function AddTreatmentModal({ onClose, fixedCategory }: { onClose: () => v
                   onChange={(e) => setSelectedTreatmentName(e.target.value)}
                   style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: '#000', fontSize: '1rem' }}
                 >
+                  <option value="" disabled>בחר/י טיפול...</option>
                   {treatmentNames.map(name => (
                     <option key={name} value={name}>{name}</option>
                   ))}
@@ -198,11 +210,11 @@ export function AddTreatmentModal({ onClose, fixedCategory }: { onClose: () => v
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>מחיר (₪)</label>
-              <input type="number" name="price" required style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: '#000', fontSize: '1rem' }} />
+              <input type="number" name="price" value={price} onChange={(e) => setPrice(e.target.value)} required style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: '#000', fontSize: '1rem' }} />
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>משך (דקות)</label>
-              <input type="number" name="durationMinutes" required style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: '#000', fontSize: '1rem' }} />
+              <input type="number" name="durationMinutes" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} required style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.2)', background: 'rgba(255,255,255,0.9)', color: '#000', fontSize: '1rem' }} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

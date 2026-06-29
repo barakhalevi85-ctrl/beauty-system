@@ -11,7 +11,7 @@ export function EmployeeModal({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: { name: string; phone: string; email: string; role: string; hourlyWage: number }) => void;
+  onSave: (data: { name: string; phone: string; email: string; role: string; hourlyWage: number; username?: string; password?: string }) => void;
   employee?: any;
 }) {
   const [name, setName] = useState(employee?.name || '');
@@ -19,7 +19,8 @@ export function EmployeeModal({
   const [email, setEmail] = useState(employee?.email || '');
   const [role, setRole] = useState(employee?.role || '');
   const [hourlyWage, setHourlyWage] = useState(employee?.hourlyWage?.toString() || '');
-
+  const [username, setUsername] = useState(employee?.username || '');
+  const [password, setPassword] = useState(employee?.password || '');
   if (!isOpen) return null;
 
   return (
@@ -46,6 +47,16 @@ export function EmployeeModal({
         </div>
 
         <div className={styles.inputGroup}>
+          <label>שם משתמש (עבור התחברות למערכת)</label>
+          <input className={styles.input} value={username} onChange={e => setUsername(e.target.value)} placeholder="למשל: ronit" />
+        </div>
+
+        <div className={styles.inputGroup}>
+          <label>סיסמה (עבור התחברות למערכת)</label>
+          <input className={styles.input} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="בחר סיסמה" />
+        </div>
+
+        <div className={styles.inputGroup}>
           <label>תפקיד</label>
           <input className={styles.input} value={role} onChange={e => setRole(e.target.value)} placeholder="למשל: קוסמטיקאית, פקידת קבלה" />
         </div>
@@ -59,7 +70,7 @@ export function EmployeeModal({
           <button 
             className={styles.saveButton} 
             style={{ flex: 1 }}
-            onClick={() => onSave({ name, phone, email, role, hourlyWage: parseFloat(hourlyWage) || 0 })}
+            onClick={() => onSave({ name, phone, email, role, hourlyWage: parseFloat(hourlyWage) || 0, username, password })}
             disabled={!name || !phone}
           >
             שמור

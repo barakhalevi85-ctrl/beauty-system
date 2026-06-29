@@ -2,14 +2,27 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { getSession } from '@/lib/session';
+
+async function getBusinessId() {
+  const session = await getSession();
+  if (!session || !session.businessId) throw new Error('Unauthorized');
+  return session.businessId;
+}
 
 export async function getAllServices() {
-  const services = await prisma.service.findMany({ orderBy: { name: 'asc' } });
+  const businessId = await getBusinessId();
+  const services = await prisma.service.findMany({ 
+    where: { businessId },
+    orderBy: { name: 'asc' } 
+  });
   return services.filter(s => s.name !== 'dummy_category_init');
 }
 
 export async function getUniqueTreatmentOptions() {
+  const businessId = await getBusinessId();
   const services = await prisma.service.findMany({
+    where: { businessId },
     select: { category: true, name: true }
   });
   const categories = Array.from(new Set(services.map(s => s.category)));
@@ -25,8 +38,10 @@ export async function addService(data: {
   price: number;
   durationMinutes: number;
 }) {
+  const businessId = await getBusinessId();
   const existing = await prisma.service.findFirst({
     where: {
+      businessId,
       category: data.category,
       name: data.name,
       packageType: data.packageType
@@ -43,15 +58,16 @@ export async function addService(data: {
     });
   } else {
     await prisma.service.create({
-      data,
+      data: { ...data, businessId },
     });
   }
   revalidatePath('/', 'layout');
 }
 
 export async function deleteService(id: string) {
+  const businessId = await getBusinessId();
   await prisma.service.delete({
-    where: { id },
+    where: { id, businessId },
   });
   revalidatePath('/', 'layout');
 }
@@ -63,8 +79,9 @@ export async function editService(id: string, data: {
   price: number;
   durationMinutes: number;
 }) {
+  const businessId = await getBusinessId();
   await prisma.service.update({
-    where: { id },
+    where: { id, businessId },
     data,
   });
   revalidatePath('/', 'layout');
@@ -73,16 +90,18 @@ export async function editService(id: string, data: {
 
 export async function editCategory(oldCategory: string, newCategory: string) {
   if (!newCategory || oldCategory === newCategory) return;
+  const businessId = await getBusinessId();
   await prisma.service.updateMany({
-    where: { category: oldCategory },
+    where: { category: oldCategory, businessId },
     data: { category: newCategory }
   });
   revalidatePath('/', 'layout');
 }
 
 export async function deleteCategory(categoryName: string) {
+  const businessId = await getBusinessId();
   await prisma.service.deleteMany({
-    where: { category: categoryName }
+    where: { category: categoryName, businessId }
   });
   revalidatePath('/', 'layout');
 }
@@ -94,16 +113,18 @@ export async function addAppointment(data: {
   date: Date;
   status: string;
 }) {
+  const businessId = await getBusinessId();
   await prisma.appointment.create({
-    data,
+    data: { ...data, businessId },
   });
   revalidatePath('/calendar');
   revalidatePath('/', 'layout');
 }
 
 export async function deleteAppointment(id: string) {
+  const businessId = await getBusinessId();
   await prisma.appointment.delete({
-    where: { id }
+    where: { id, businessId }
   });
   revalidatePath('/calendar');
   revalidatePath('/', 'layout');
@@ -113,8 +134,9 @@ export async function editAppointment(id: string, data: {
   serviceId?: string;
   date: Date;
 }) {
+  const businessId = await getBusinessId();
   await prisma.appointment.update({
-    where: { id },
+    where: { id, businessId },
     data
   });
   revalidatePath('/calendar');

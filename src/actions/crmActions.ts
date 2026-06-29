@@ -2,19 +2,27 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { getSession } from '@/lib/session';
+
+async function getBusinessId() {
+  const session = await getSession();
+  if (!session || !session.businessId) throw new Error('Unauthorized');
+  return session.businessId;
+}
 
 export async function getClientActiveSeries(clientId: string) {
+  const businessId = await getBusinessId();
   return await prisma.clientSeries.findMany({
-    where: { clientId, isCompleted: false },
+    where: { clientId, isCompleted: false, businessId },
     include: { service: true },
     orderBy: { createdAt: 'desc' }
   });
 }
 
 export async function sellPackage(formData: FormData) {
+  const businessId = await getBusinessId();
   const clientId = formData.get('clientId') as string;
   const serviceId = formData.get('serviceId') as string;
   const isSeries = formData.get('treatmentType') === 'series';
@@ -22,10 +30,11 @@ export async function sellPackage(formData: FormData) {
   const pricePaid = formData.get('pricePaid') ? Number(formData.get('pricePaid')) : null;
   const paymentMethod = formData.get('paymentMethod') as string;
 
-  const service = await prisma.service.findUnique({ where: { id: serviceId }});
+  const service = await prisma.service.findUnique({ where: { id: serviceId, businessId }});
 
   const newSeries = await prisma.clientSeries.create({
     data: {
+      businessId,
       clientId,
       serviceId,
       serviceName: service?.name || 'כללי',
@@ -34,18 +43,18 @@ export async function sellPackage(formData: FormData) {
     }
   });
 
-  // Generate Invoice if payment was made
   let invoiceStr = '';
   let generatedInvoiceId = null;
   if (pricePaid && pricePaid > 0) {
-    const sysSettings = await prisma.systemSettings.findUnique({ where: { id: 'default' } });
+    const sysSettings = await prisma.systemSettings.findUnique({ where: { businessId } });
     const bizSettings = sysSettings?.businessSettings ? JSON.parse(sysSettings.businessSettings) : null;
     const nextInvoiceNumber = bizSettings?.nextInvoiceNumber || 1000;
     const dealerType = bizSettings?.dealerType === 'AUTHORIZED' ? 'TAX_RECEIPT' : 'RECEIPT';
 
     const newInvoice = await prisma.invoice.create({
       data: {
-        invoiceNumber: nextInvoiceNumber,
+        businessId,
+        invoiceNumber: String(nextInvoiceNumber),
         clientId,
         amount: pricePaid,
         type: dealerType,
@@ -55,10 +64,10 @@ export async function sellPackage(formData: FormData) {
       }
     });
 
-    if (bizSettings) {
+    if (bizSettings && sysSettings) {
       bizSettings.nextInvoiceNumber = nextInvoiceNumber + 1;
       await prisma.systemSettings.update({
-        where: { id: 'default' },
+        where: { id: sysSettings.id },
         data: { businessSettings: JSON.stringify(bizSettings) }
       });
     }
@@ -67,13 +76,13 @@ export async function sellPackage(formData: FormData) {
     generatedInvoiceId = newInvoice.id;
   }
 
-  // Add automatic call log entry
   const typeText = isSeries ? `סדרה של ${seriesTotal} טיפולים` : 'טיפול בודד';
   const priceText = pricePaid ? ` במחיר ${pricePaid} ₪ (אמצעי תשלום: ${paymentMethod || 'מזומן'})` : '';
   const notes = `💰 רכישה חדשה: ${service?.name} (${typeText})${priceText}${invoiceStr}`;
 
   await prisma.callLog.create({
     data: {
+      businessId,
       clientId,
       notes
     }
@@ -84,6 +93,7 @@ export async function sellPackage(formData: FormData) {
 }
 
 export async function updatePackage(formData: FormData) {
+  const businessId = await getBusinessId();
   const seriesId = formData.get('seriesId') as string;
   const clientId = formData.get('clientId') as string;
   const serviceId = formData.get('serviceId') as string;
@@ -93,7 +103,7 @@ export async function updatePackage(formData: FormData) {
   const editReason = formData.get('editReason') as string;
 
   const updated = await prisma.clientSeries.update({
-    where: { id: seriesId },
+    where: { id: seriesId, businessId },
     data: {
       serviceId,
       totalTreatments: seriesTotal,
@@ -107,19 +117,20 @@ export async function updatePackage(formData: FormData) {
   const notes = `🔄 עדכון חבילה: שונה ל-${updated.service?.name} (${typeText})${priceText}. סיבה: ${editReason || 'לא צוינה'}`;
 
   await prisma.callLog.create({
-    data: { clientId, notes }
+    data: { businessId, clientId, notes }
   });
 
   revalidatePath(`/crm/${clientId}`);
 }
 
 export async function deletePackage(formData: FormData) {
+  const businessId = await getBusinessId();
   const seriesId = formData.get('seriesId') as string;
   const clientId = formData.get('clientId') as string;
   const deleteReason = formData.get('deleteReason') as string;
 
   const series = await prisma.clientSeries.findUnique({
-    where: { id: seriesId },
+    where: { id: seriesId, businessId },
     include: { service: true }
   });
 
@@ -131,7 +142,7 @@ export async function deletePackage(formData: FormData) {
     const notes = `❌ ביטול חבילה/עסקה: ${series.service?.name}. סיבה: ${deleteReason || 'לא צוינה'}`;
 
     await prisma.callLog.create({
-      data: { clientId, notes }
+      data: { businessId, clientId, notes }
     });
   }
 
@@ -139,6 +150,7 @@ export async function deletePackage(formData: FormData) {
 }
 
 export async function logTreatment(formData: FormData) {
+  const businessId = await getBusinessId();
   const clientId = formData.get('clientId') as string;
   const appointmentId = formData.get('appointmentId') as string;
   const bodyArea = formData.get('bodyArea') as string;
@@ -149,14 +161,13 @@ export async function logTreatment(formData: FormData) {
   const paymentMethod = formData.get('paymentMethod') as string;
   const selectedSeriesId = formData.get('clientSeriesId') as string;
 
-  // Find active series for this client and service to punch it
   let clientSeriesId = null;
   let treatmentNumber = 1;
   let seriesTotal = null;
 
   if (selectedSeriesId && selectedSeriesId !== 'none') {
     const activeSeries = await prisma.clientSeries.findUnique({
-      where: { id: selectedSeriesId }
+      where: { id: selectedSeriesId, businessId }
     });
 
     if (activeSeries && !activeSeries.isCompleted) {
@@ -164,7 +175,6 @@ export async function logTreatment(formData: FormData) {
       treatmentNumber = activeSeries.usedTreatments + 1;
       seriesTotal = activeSeries.totalTreatments;
 
-      // Update the series (Punch the card)
       await prisma.clientSeries.update({
         where: { id: activeSeries.id },
         data: {
@@ -176,9 +186,9 @@ export async function logTreatment(formData: FormData) {
     }
   }
 
-  // Create the treatment log
   const newTreatmentLog = await prisma.treatmentLog.create({
     data: {
+      businessId,
       clientId,
       appointmentId: appointmentId || null,
       clientSeriesId,
@@ -187,21 +197,22 @@ export async function logTreatment(formData: FormData) {
       bodyArea,
       fluenceJoule,
       technicianNotes,
-      imageUrls: null // Add S3/Storage logic later
+      imageUrls: null
     }
   });
 
   let invoiceStr = '';
   let generatedInvoiceId = null;
   if (paymentAmount > 0) {
-    const sysSettings = await prisma.systemSettings.findUnique({ where: { id: 'default' } });
+    const sysSettings = await prisma.systemSettings.findUnique({ where: { businessId } });
     const bizSettings = sysSettings?.businessSettings ? JSON.parse(sysSettings.businessSettings) : null;
     const nextInvoiceNumber = bizSettings?.nextInvoiceNumber || 1000;
     const dealerType = bizSettings?.dealerType === 'AUTHORIZED' ? 'TAX_RECEIPT' : 'RECEIPT';
 
     const newInvoice = await prisma.invoice.create({
       data: {
-        invoiceNumber: nextInvoiceNumber,
+        businessId,
+        invoiceNumber: String(nextInvoiceNumber),
         clientId,
         amount: paymentAmount,
         type: dealerType,
@@ -211,10 +222,10 @@ export async function logTreatment(formData: FormData) {
       }
     });
 
-    if (bizSettings) {
+    if (bizSettings && sysSettings) {
       bizSettings.nextInvoiceNumber = nextInvoiceNumber + 1;
       await prisma.systemSettings.update({
-        where: { id: 'default' },
+        where: { id: sysSettings.id },
         data: { businessSettings: JSON.stringify(bizSettings) }
       });
     }
@@ -223,14 +234,12 @@ export async function logTreatment(formData: FormData) {
     generatedInvoiceId = newInvoice.id;
   }
 
-  // Add automatic call log entry
   const paymentText = paymentAmount > 0 ? ` (שולם: ${paymentAmount} ₪, ${paymentMethod || 'מזומן'}${invoiceStr})` : '';
   const notes = `✅ טיפול בוצע: ${bodyArea} (טיפול ${treatmentNumber} מתוך ${seriesTotal || 1})${paymentText}`;
   await prisma.callLog.create({
-    data: { clientId, notes }
+    data: { businessId, clientId, notes }
   });
 
-  // Mark appointment as completed
   if (appointmentId) {
     await prisma.appointment.update({
       where: { id: appointmentId },
@@ -243,7 +252,24 @@ export async function logTreatment(formData: FormData) {
   return { invoiceId: generatedInvoiceId };
 }
 
+export async function cancelAppointment(appointmentId: string, clientId: string, reason: string) {
+  const businessId = await getBusinessId();
+  await prisma.appointment.update({
+    where: { id: appointmentId, businessId },
+    data: { status: 'בוטל' }
+  });
+
+  const notes = `❌ התור בוטל. סיבה: ${reason || 'לא צוינה'}`;
+  await prisma.callLog.create({
+    data: { businessId, clientId, notes }
+  });
+
+  revalidatePath(`/crm/${clientId}`);
+  revalidatePath(`/calendar`);
+}
+
 export async function addTreatmentLog(formData: FormData) {
+  const businessId = await getBusinessId();
   const clientId = formData.get('clientId') as string;
   const treatmentNumber = Number(formData.get('treatmentNumber'));
   const seriesTotal = formData.get('seriesTotal') ? Number(formData.get('seriesTotal')) : null;
@@ -258,7 +284,6 @@ export async function addTreatmentLog(formData: FormData) {
   try {
     await mkdir(uploadDir, { recursive: true });
   } catch (e) {
-    // Ignore if directory already exists
   }
 
   for (const file of imageFiles) {
@@ -276,6 +301,7 @@ export async function addTreatmentLog(formData: FormData) {
 
   await prisma.treatmentLog.create({
     data: {
+      businessId,
       clientId,
       treatmentNumber,
       seriesTotal,
@@ -286,16 +312,16 @@ export async function addTreatmentLog(formData: FormData) {
     }
   });
 
-  // Add automatic call log entry
   const notes = `✅ תיעוד טיפול: ${bodyArea} (טיפול ${treatmentNumber} מתוך ${seriesTotal || 1})`;
   await prisma.callLog.create({
-    data: { clientId, notes }
+    data: { businessId, clientId, notes }
   });
 
   revalidatePath(`/crm/${clientId}`);
 }
 
 export async function addClient(formData: FormData) {
+  const businessId = await getBusinessId();
   const name = formData.get('name') as string;
   const lastName = formData.get('lastName') as string;
   const idNumber = formData.get('idNumber') as string;
@@ -309,6 +335,7 @@ export async function addClient(formData: FormData) {
 
   const newClient = await prisma.client.create({
     data: {
+      businessId,
       name,
       lastName,
       idNumber,
@@ -326,12 +353,46 @@ export async function addClient(formData: FormData) {
   return newClient;
 }
 
+export async function updateClientInfo(formData: FormData) {
+  const businessId = await getBusinessId();
+  const id = formData.get('id') as string;
+  const name = formData.get('name') as string;
+  const lastName = formData.get('lastName') as string;
+  const idNumber = formData.get('idNumber') as string;
+  const phone = formData.get('phone') as string;
+  const address = formData.get('address') as string;
+  const email = formData.get('email') as string;
+  const dateOfBirth = formData.get('dateOfBirth') as string;
+  const medicalNotes = formData.get('medicalNotes') as string;
+  const gender = formData.get('gender') as string;
+
+  await prisma.client.update({
+    where: { id, businessId },
+    data: {
+      name,
+      lastName,
+      idNumber,
+      phone,
+      address,
+      email,
+      dateOfBirth,
+      medicalNotes,
+      gender,
+    }
+  });
+
+  revalidatePath(`/crm/${id}`);
+  revalidatePath('/crm');
+}
+
 export async function addCallLog(formData: FormData) {
+  const businessId = await getBusinessId();
   const clientId = formData.get('clientId') as string;
   const notes = formData.get('notes') as string;
   
   await prisma.callLog.create({
     data: {
+      businessId,
       clientId,
       notes,
     }
@@ -341,45 +402,45 @@ export async function addCallLog(formData: FormData) {
 }
 
 export async function deleteClient(clientId: string) {
-  // Soft Delete (Archive)
+  const businessId = await getBusinessId();
   await prisma.client.update({
-    where: { id: clientId },
+    where: { id: clientId, businessId },
     data: { isActive: false }
   });
-
   revalidatePath('/crm');
 }
 
 export async function restoreClient(clientId: string) {
-  // Restore
+  const businessId = await getBusinessId();
   await prisma.client.update({
-    where: { id: clientId },
+    where: { id: clientId, businessId },
     data: { isActive: true }
   });
-
   revalidatePath('/crm/inactive');
   revalidatePath('/crm');
 }
 
 export async function updateCallLog(id: string, notes: string) {
+  const businessId = await getBusinessId();
   const log = await prisma.callLog.update({
-    where: { id },
+    where: { id, businessId },
     data: { notes }
   });
-
   revalidatePath(`/crm/${log.clientId}`);
 }
 
 export async function deleteTreatmentLog(id: string, clientId: string) {
+  const businessId = await getBusinessId();
   await prisma.treatmentLog.delete({
-    where: { id }
+    where: { id, businessId }
   });
   revalidatePath(`/crm/${clientId}`);
 }
 
 export async function refundCompletedAppointment(appointmentId: string) {
+  const businessId = await getBusinessId();
   const appointment = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
+    where: { id: appointmentId, businessId },
     include: { treatmentLog: { include: { invoices: true } } }
   });
 
@@ -394,7 +455,6 @@ export async function refundCompletedAppointment(appointmentId: string) {
   if (treatmentLog.invoices && treatmentLog.invoices.length > 0) {
     const originalInvoice = treatmentLog.invoices[0];
     
-    // Disconnect the invoice from the treatment log before deleting the log
     for (const inv of treatmentLog.invoices) {
       await prisma.invoice.update({
         where: { id: inv.id },
@@ -403,13 +463,14 @@ export async function refundCompletedAppointment(appointmentId: string) {
     }
 
     if (originalInvoice.amount > 0) {
-      const sysSettings = await prisma.systemSettings.findUnique({ where: { id: 'default' } });
+      const sysSettings = await prisma.systemSettings.findUnique({ where: { businessId } });
       const bizSettings = sysSettings?.businessSettings ? JSON.parse(sysSettings.businessSettings) : null;
       const nextInvoiceNumber = bizSettings?.nextInvoiceNumber || 1000;
 
       const newInvoice = await prisma.invoice.create({
         data: {
-          invoiceNumber: nextInvoiceNumber,
+          businessId,
+          invoiceNumber: String(nextInvoiceNumber),
           clientId: treatmentLog.clientId,
           amount: originalInvoice.amount,
           type: 'CREDIT_INVOICE',
@@ -418,10 +479,10 @@ export async function refundCompletedAppointment(appointmentId: string) {
         }
       });
 
-      if (bizSettings) {
+      if (bizSettings && sysSettings) {
         bizSettings.nextInvoiceNumber = nextInvoiceNumber + 1;
         await prisma.systemSettings.update({
-          where: { id: 'default' },
+          where: { id: sysSettings.id },
           data: { businessSettings: JSON.stringify(bizSettings) }
         });
       }
@@ -431,7 +492,6 @@ export async function refundCompletedAppointment(appointmentId: string) {
     }
   }
 
-  // Restore client series punch
   if (treatmentLog.clientSeriesId) {
     const series = await prisma.clientSeries.findUnique({ where: { id: treatmentLog.clientSeriesId } });
     if (series) {
@@ -439,27 +499,25 @@ export async function refundCompletedAppointment(appointmentId: string) {
         where: { id: series.id },
         data: {
           usedTreatments: Math.max(0, series.usedTreatments - 1),
-          isCompleted: false // Unmark completion because we refunded a punch
+          isCompleted: false
         }
       });
       notesStr += ` | ניקוב טיפול הוחזר לכרטיסייה`;
     }
   }
 
-  // Create CallLog
   await prisma.callLog.create({
     data: {
+      businessId,
       clientId: treatmentLog.clientId,
       notes: notesStr
     }
   });
 
-  // Delete TreatmentLog
   await prisma.treatmentLog.delete({
     where: { id: treatmentLog.id }
   });
 
-  // Revert Appointment status
   await prisma.appointment.update({
     where: { id: appointmentId },
     data: { status: 'מתוכנן' }
@@ -467,13 +525,13 @@ export async function refundCompletedAppointment(appointmentId: string) {
 
   revalidatePath(`/crm/${treatmentLog.clientId}`);
   revalidatePath(`/calendar`);
-
   return { invoiceId: generatedInvoiceId };
 }
 
 export async function getClientFullProfile(clientId: string) {
+  const businessId = await getBusinessId();
   return await prisma.client.findUnique({
-    where: { id: clientId },
+    where: { id: clientId, businessId },
     include: {
       clientSeries: {
         include: { service: true, invoices: true },

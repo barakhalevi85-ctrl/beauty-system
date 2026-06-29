@@ -1,14 +1,37 @@
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = "file:./dev2.db"
 }
 
 generator client {
   provider = "prisma-client-js"
 }
 
+model Business {
+  id                 String   @id @default(uuid())
+  name               String
+  ownerId            String?  // Reference to the main Employee/Owner
+  subscriptionStatus String   @default("TRIAL") // TRIAL, ACTIVE, SUSPENDED
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  clients         Client[]
+  employees       Employee[]
+  services        Service[]
+  appointments    Appointment[]
+  treatmentLogs   TreatmentLog[]
+  invoices        Invoice[]
+  clientSeries    ClientSeries[]
+  callLogs        CallLog[]
+  closedDates     ClosedDate[]
+  systemSettings  SystemSettings?
+}
+
 model Client {
   id                       String         @id @default(uuid())
+  businessId               String
+  business                 Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
   name                     String
   lastName                 String?
   phone                    String
@@ -25,6 +48,7 @@ model Client {
   isActive                 Boolean        @default(true)
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
+  
   treatmentLogs            TreatmentLog[]
   appointments             Appointment[]
   callLogs                 CallLog[]
@@ -34,12 +58,14 @@ model Client {
 
 model ClientSeries {
   id              String         @id @default(uuid())
+  businessId      String
+  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   clientId        String
-  client          Client         @relation(fields: [clientId], references: [id])
+  client          Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
   serviceId       String?
   service         Service?       @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  serviceName     String?        // Historical name snapshot
-  totalTreatments Int            // 1 for single treatment, X for series
+  serviceName     String?
+  totalTreatments Int
   usedTreatments  Int            @default(0)
   pricePaid       Float?
   isCompleted     Boolean        @default(false)
@@ -51,8 +77,10 @@ model ClientSeries {
 
 model TreatmentLog {
   id              String        @id @default(uuid())
+  businessId      String
+  business        Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   clientId        String
-  client          Client        @relation(fields: [clientId], references: [id])
+  client          Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientSeriesId  String?
   clientSeries    ClientSeries? @relation(fields: [clientSeriesId], references: [id], onDelete: SetNull)
   appointmentId   String?       @unique
@@ -69,11 +97,13 @@ model TreatmentLog {
 
 model Appointment {
   id           String        @id @default(uuid())
+  businessId   String
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   clientId     String
-  client       Client        @relation(fields: [clientId], references: [id])
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   serviceId    String?
   service      Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  serviceName  String?  // Historical name snapshot
+  serviceName  String?
   date         DateTime
   status       String
   treatmentLog TreatmentLog?
@@ -82,6 +112,8 @@ model Appointment {
 
 model Service {
   id              String         @id @default(uuid())
+  businessId      String
+  business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
   category        String
   name            String
   packageType     String
@@ -92,35 +124,45 @@ model Service {
 }
 
 model CallLog {
-  id        String   @id @default(uuid())
-  clientId  String
-  client    Client   @relation(fields: [clientId], references: [id])
-  notes     String
-  createdAt DateTime @default(now())
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  notes      String
+  createdAt  DateTime @default(now())
 }
 
 model SystemSettings {
-  id               String   @id @default("default")
+  id               String   @id @default(uuid())
+  businessId       String   @unique
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   weeklySchedule   String   @default("{\"0\":{\"isOpen\":true,\"start\":\"08:00\",\"end\":\"20:00\"},\"1\":{\"isOpen\":true,\"start\":\"08:00\",\"end\":\"20:00\"},\"2\":{\"isOpen\":true,\"start\":\"08:00\",\"end\":\"20:00\"},\"3\":{\"isOpen\":true,\"start\":\"08:00\",\"end\":\"20:00\"},\"4\":{\"isOpen\":true,\"start\":\"08:00\",\"end\":\"20:00\"},\"5\":{\"isOpen\":true,\"start\":\"08:00\",\"end\":\"14:00\"},\"6\":{\"isOpen\":false,\"start\":\"08:00\",\"end\":\"20:00\"}}")
-  businessSettings String?  // JSON string for logo, invoices, etc.
-  messageSettings  String?  // JSON string for whatsapp/sms automations
+  businessSettings String?
+  messageSettings  String?
   updatedAt        DateTime @updatedAt
 }
 
 model ClosedDate {
   id          String   @id @default(uuid())
-  date        DateTime @unique
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  date        DateTime // No longer globally unique, multiple businesses can close on same date
   description String?
   createdAt   DateTime @default(now())
 }
 
 model Employee {
   id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name        String
   phone       String
   email       String?
-  role        String?
+  role        String?  // SUPER_ADMIN for platform owner, ADMIN for salon owner, EMPLOYEE for workers
   hourlyWage  Float?
+  username    String?  @unique
+  password    String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -134,8 +176,8 @@ model EmployeeTimeReport {
   employeeId  String
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   date        DateTime
-  startTime   String   // "09:00"
-  endTime     String   // "17:00"
+  startTime   String
+  endTime     String
   totalHours  Float?
   notes       String?
   createdAt   DateTime @default(now())
@@ -146,25 +188,27 @@ model EmployeeLeave {
   employeeId  String
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   date        DateTime
-  type        String   // "VACATION", "SICK", "OTHER"
+  type        String
   notes       String?
   createdAt   DateTime @default(now())
 }
 
 model Invoice {
   id             String        @id @default(uuid())
-  invoiceNumber  Int           // Assigned manually based on business settings
+  businessId     String
+  business       Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invoiceNumber  String        // Now string to support prefixes per business if needed
   clientId       String
-  client         Client        @relation(fields: [clientId], references: [id])
+  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   amount         Float
-  type           String        // "RECEIPT" or "TAX_RECEIPT"
-  paymentMethod  String?       // Cash, Credit, Transfer, Bit, Paybox
+  type           String
+  paymentMethod  String?
   date           DateTime      @default(now())
   description    String
+  items          String?
   treatmentLogId String?
-  treatmentLog   TreatmentLog? @relation(fields: [treatmentLogId], references: [id])
+  treatmentLog   TreatmentLog? @relation(fields: [treatmentLogId], references: [id], onDelete: SetNull)
   clientSeriesId String?
-  clientSeries   ClientSeries? @relation(fields: [clientSeriesId], references: [id])
+  clientSeries   ClientSeries? @relation(fields: [clientSeriesId], references: [id], onDelete: SetNull)
   createdAt      DateTime      @default(now())
 }
-

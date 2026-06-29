@@ -74,6 +74,21 @@ export default function LogTreatmentModal({
     }
   }
 
+  async function handleCancelAppointment() {
+    if (!confirm('האם את בטוחה שברצונך לבטל את התור? פעולה זו תסיר אותו מהיומן ותתעד בתיק הלקוח.')) return;
+    setIsPending(true);
+    const reason = prompt('סיבת הביטול (אופציונלי):') || '';
+    try {
+      const { cancelAppointment } = await import('@/actions/crmActions');
+      await cancelAppointment(appointmentId, clientId, reason);
+      onClose();
+    } catch (error) {
+      alert('שגיאה בביטול התור');
+    } finally {
+      setIsPending(false);
+    }
+  }
+
   return (
     <div className={styles.modalOverlay} style={{ zIndex: 1000, position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
       <div className={`${styles.modalContent} glass-panel`} style={{ maxHeight: '90vh', overflowY: 'auto', background: 'white' }} onClick={(e) => e.stopPropagation()}>
@@ -115,7 +130,7 @@ export default function LogTreatmentModal({
           <input type="hidden" name="bodyArea" value={serviceName || 'כללי'} />
 
           <div className={styles.formGroup}>
-            <label>בחירת כרטיסייה / סדרה לניקוב:</label>
+            <label>בחירת תשלום מראש לניקוב (כרטיסייה / טיפול בודד):</label>
             {loadingSeries ? (
               <p style={{ fontSize: '0.9rem', color: 'var(--color-charcoal-light)' }}>טוען כרטיסיות...</p>
             ) : (
@@ -181,8 +196,11 @@ export default function LogTreatmentModal({
             <button type="submit" disabled={isPending} className={styles.submitButton}>
               {isPending ? 'שומר...' : (selectedSeriesId === 'none' ? 'שמור תשלום' : 'שמור ונַקֵב כרטיסייה')}
             </button>
+            <button type="button" onClick={handleCancelAppointment} disabled={isPending} className={styles.cancelButton} style={{ background: '#ff4d4d', color: 'white', border: 'none' }}>
+              בטל תור
+            </button>
             <button type="button" onClick={onClose} className={styles.cancelButton}>
-              ביטול
+              סגור
             </button>
           </div>
         </form>

@@ -1,5 +1,5 @@
 .sidebar {
-  width: 260px;
+  width: 210px;
   background-color: var(--color-charcoal-black);
   color: var(--color-cream-white);
   display: flex;
@@ -12,7 +12,7 @@
 }
 
 .logo {
-  padding: 2rem 1.5rem;
+  padding: 1.5rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -38,10 +38,10 @@
 
 .nav li a {
   display: block;
-  padding: 1rem 1.5rem;
+  padding: 0.8rem 1rem;
   color: #ccc;
   text-decoration: none;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   transition: all 0.3s ease;
   border-right: 4px solid transparent;
 }

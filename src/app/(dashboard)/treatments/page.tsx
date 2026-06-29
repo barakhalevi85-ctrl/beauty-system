@@ -44,7 +44,7 @@ export default async function TreatmentsPage() {
             <p>אין טיפולים במערכת עדיין. הוסף טיפול חדש.</p>
           </div>
         )}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1rem', alignItems: 'start' }}>
           {categories.map((category) => {
             const visibleTreatments = category.treatments.filter(t => t.name !== 'dummy_category_init');
             return (
@@ -57,21 +57,21 @@ export default async function TreatmentsPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'white' }}>
                     <tr style={{ borderBottom: '2px solid var(--color-rose-gold)' }}>
-                      <th style={{ padding: '1rem', fontWeight: 'bold' }}>שם הטיפול</th>
-                      <th style={{ padding: '1rem', fontWeight: 'bold' }}>מחיר (₪)</th>
-                      <th style={{ padding: '1rem', fontWeight: 'bold', textAlign: 'center' }}>פעולות</th>
+                      <th style={{ padding: '0.75rem 1rem', fontWeight: 'bold', fontSize: '0.9rem' }}>שם הטיפול</th>
+                      <th style={{ padding: '0.75rem 1rem', fontWeight: 'bold', fontSize: '0.9rem' }}>מחיר (₪)</th>
+                      <th style={{ padding: '0.75rem 1rem', fontWeight: 'bold', textAlign: 'center', fontSize: '0.9rem' }}>פעולות</th>
                     </tr>
                   </thead>
                   <tbody>
                     {visibleTreatments.map((treatment) => (
                       <tr key={treatment.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', transition: 'background 0.2s' }}>
-                        <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--color-charcoal-black)' }}>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: 'bold', color: 'var(--color-charcoal-black)', fontSize: '0.95rem' }}>
                           {treatment.name}
-                          <div style={{ fontSize: '0.8rem', color: 'var(--color-charcoal-light)', fontWeight: 'normal', marginTop: '0.25rem' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-charcoal-light)', fontWeight: 'normal', marginTop: '0.2rem' }}>
                             {treatment.packageType} | {treatment.durationMinutes} דק'
                           </div>
                         </td>
-                        <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--color-rose-gold)', fontSize: '1.1rem' }}>₪{treatment.price}</td>
+                        <td style={{ padding: '0.75rem 1rem', fontWeight: 'bold', color: 'var(--color-rose-gold)', fontSize: '1rem' }}>₪{treatment.price}</td>
                         <td style={{ padding: '0.5rem', textAlign: 'center' }}>
                           <TreatmentActions treatment={treatment} />
                         </td>

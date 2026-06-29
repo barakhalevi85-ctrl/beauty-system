@@ -1,5 +1,5 @@
 .container {
-  padding: 2rem;
+  padding: 1rem;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -8,23 +8,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
-  padding: 2rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.5rem;
 }
 
 .headerInfo h1 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: var(--color-charcoal-black);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .headerInfo p {
   color: var(--color-charcoal-light);
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  margin: 0;
 }
 
 .tableContainer {
-  padding: 1.5rem;
+  padding: 1rem;
   overflow-x: auto;
 }
 
@@ -35,8 +36,9 @@
 }
 
 .table th, .table td {
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-glass-border);
+  font-size: 0.95rem;
 }
 
 .table th {
@@ -61,10 +63,10 @@
   display: inline-block;
   background: var(--color-rose-gold);
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: var(--radius-sm);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   transition: opacity 0.2s ease;
 }
 

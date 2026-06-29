@@ -58,7 +58,7 @@ export default function AddClientModal() {
                 </div>
                 <div className={styles.formGroup}>
                   <label>שם משפחה:</label>
-                  <input type="text" name="lastName" className={styles.input} />
+                  <input type="text" name="lastName" required className={styles.input} />
                 </div>
                 <div className={styles.formGroup}>
                   <label>ת.ז:</label>

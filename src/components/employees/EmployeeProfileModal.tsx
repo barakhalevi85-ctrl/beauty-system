@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from '@/app/(dashboard)/settings/settings.module.css';
-import { getEmployeeWithDetails, addTimeReport, deleteTimeReport, addEmployeeLeave, deleteEmployeeLeave } from '@/actions/employeeActions';
+import { getEmployeeWithDetails, updateEmployee, addTimeReport, deleteTimeReport, addEmployeeLeave, deleteEmployeeLeave } from '@/actions/employeeActions';
 
 export function EmployeeProfileModal({
   isOpen,
@@ -16,6 +16,10 @@ export function EmployeeProfileModal({
   const [activeTab, setActiveTab] = useState('details');
   const [details, setDetails] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState({
+    name: '', phone: '', email: '', role: '', hourlyWage: 0
+  });
 
   // Time report state
   const [trDate, setTrDate] = useState('');
@@ -33,6 +37,15 @@ export function EmployeeProfileModal({
     setLoading(true);
     const data = await getEmployeeWithDetails(employee.id);
     setDetails(data);
+    if (data) {
+      setEditData({
+        name: data.name || '',
+        phone: data.phone || '',
+        email: data.email || '',
+        role: data.role || '',
+        hourlyWage: data.hourlyWage || 0
+      });
+    }
     setLoading(false);
   };
 
@@ -41,6 +54,25 @@ export function EmployeeProfileModal({
       fetchDetails();
     }
   }, [isOpen, employee?.id]);
+
+  const handleSaveDetails = async () => {
+    try {
+      setLoading(true);
+      await updateEmployee(employee.id, {
+        name: editData.name,
+        phone: editData.phone,
+        email: editData.email,
+        role: editData.role,
+        hourlyWage: Number(editData.hourlyWage) || undefined
+      });
+      setEditMode(false);
+      await fetchDetails();
+    } catch (e) {
+      alert('שגיאה בעדכון פרטים');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddTimeReport = async () => {
     if (!trDate || !trStart || !trEnd) return alert('נא למלא תאריך ושעות');
@@ -77,11 +109,53 @@ export function EmployeeProfileModal({
 
         {activeTab === 'details' && (
           <div>
-            <p><strong>טלפון:</strong> {employee.phone}</p>
-            <p><strong>אימייל:</strong> {employee.email || 'לא הוזן'}</p>
-            <p><strong>תפקיד:</strong> {employee.role || 'לא הוזן'}</p>
-            <p><strong>שכר לשעה:</strong> {employee.hourlyWage ? `₪${employee.hourlyWage}` : 'לא הוגדר'}</p>
-            {/* Here we can add the edit form later */}
+            {!editMode ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <p><strong>שם מלא:</strong> {details?.name}</p>
+                <p><strong>טלפון:</strong> {details?.phone}</p>
+                <p><strong>אימייל:</strong> {details?.email || 'לא הוזן'}</p>
+                <p><strong>תפקיד:</strong> {details?.role || 'לא הוזן'}</p>
+                <p><strong>שכר לשעה:</strong> {details?.hourlyWage ? `₪${details?.hourlyWage}` : 'לא הוגדר'}</p>
+                <button 
+                  onClick={() => setEditMode(true)} 
+                  className={styles.saveButton} 
+                  style={{ width: 'fit-content', marginTop: '1rem' }}
+                >
+                  ✏️ עריכת פרטים
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label>שם מלא</label>
+                  <input type="text" className={styles.input} value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} />
+                </div>
+                <div>
+                  <label>טלפון</label>
+                  <input type="text" className={styles.input} value={editData.phone} onChange={e => setEditData({...editData, phone: e.target.value})} />
+                </div>
+                <div>
+                  <label>אימייל</label>
+                  <input type="email" className={styles.input} value={editData.email} onChange={e => setEditData({...editData, email: e.target.value})} />
+                </div>
+                <div>
+                  <label>תפקיד</label>
+                  <input type="text" className={styles.input} value={editData.role} onChange={e => setEditData({...editData, role: e.target.value})} />
+                </div>
+                <div>
+                  <label>שכר לשעה (₪)</label>
+                  <input type="number" className={styles.input} value={editData.hourlyWage} onChange={e => setEditData({...editData, hourlyWage: parseFloat(e.target.value)})} />
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                  <button onClick={handleSaveDetails} className={styles.saveButton} disabled={loading}>
+                    {loading ? 'שומר...' : 'שמור שינויים'}
+                  </button>
+                  <button onClick={() => setEditMode(false)} className={styles.addButton} style={{ background: '#eee', color: 'black' }}>
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

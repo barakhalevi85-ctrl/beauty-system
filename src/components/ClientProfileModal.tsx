@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getClientFullProfile } from '@/actions/crmActions';
+import { getClientFullProfile, updateClientInfo } from '@/actions/crmActions';
 import AddCallLogForm from '@/components/AddCallLogForm';
 import EditableCallLog from '@/components/EditableCallLog';
 import TreatmentHistoryItem from '@/components/TreatmentHistoryItem';
@@ -35,9 +35,9 @@ const modalContentStyle: React.CSSProperties = {
 const tabButtonStyle = (isActive: boolean): React.CSSProperties => ({
   flex: 1,
   padding: '0.75rem',
-  background: isActive ? 'var(--color-charcoal)' : 'transparent',
-  color: isActive ? 'white' : 'var(--color-charcoal)',
-  border: '1px solid var(--color-charcoal)',
+  background: isActive ? 'var(--color-rose-gold)' : 'transparent',
+  color: isActive ? 'white' : 'var(--color-charcoal-black)',
+  border: '1px solid var(--color-rose-gold)',
   cursor: 'pointer',
   fontWeight: 'bold',
   transition: 'all 0.2s',
@@ -47,8 +47,10 @@ const tabButtonStyle = (isActive: boolean): React.CSSProperties => ({
 export default function ClientProfileModal({ clientId, onClose }: { clientId: string, onClose: () => void }) {
   const [client, setClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'info' | 'calls' | 'series' | 'treatments' | 'appointments'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'calls' | 'series' | 'treatments' | 'appointments' | 'gallery'>('info');
   const [services, setServices] = useState<any[]>([]);
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [isSavingInfo, setIsSavingInfo] = useState(false);
 
   useEffect(() => {
     // Fetch client profile
@@ -103,21 +105,102 @@ export default function ClientProfileModal({ clientId, onClose }: { clientId: st
           <button style={tabButtonStyle(activeTab === 'calls')} onClick={() => setActiveTab('calls')}>שיחות</button>
           <button style={tabButtonStyle(activeTab === 'series')} onClick={() => setActiveTab('series')}>סדרות</button>
           <button style={tabButtonStyle(activeTab === 'treatments')} onClick={() => setActiveTab('treatments')}>טיפולים</button>
+          <button style={tabButtonStyle(activeTab === 'gallery')} onClick={() => setActiveTab('gallery')}>גלריה</button>
           <button style={tabButtonStyle(activeTab === 'appointments')} onClick={() => setActiveTab('appointments')}>תורים</button>
         </div>
 
         <div style={{ minHeight: '300px' }}>
           {activeTab === 'info' && (
             <div>
-              <h3>פרטים כלליים</h3>
-              <p><strong>כתובת:</strong> {client.address || 'לא צוינה'}</p>
-              <p><strong>אימייל:</strong> {client.email || 'לא צוין'}</p>
-              <p><strong>תאריך לידה:</strong> {client.birthDate ? new Date(client.birthDate).toLocaleDateString('he-IL') : 'לא צוין'}</p>
-              <p><strong>הצהרת בריאות:</strong> {client.healthDeclarationSent ? 'נשלחה ✅' : 'לא נשלחה ❌'}</p>
-              <div style={{ marginTop: '1rem', padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #eee' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0' }}>מצב רפואי / הערות קבועות</h4>
-                <p style={{ margin: 0 }}>{client.medicalNotes || 'אין הערות רפואיות'}</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3>פרטים כלליים</h3>
+                <button 
+                  onClick={() => setIsEditingInfo(!isEditingInfo)} 
+                  style={{ background: 'none', border: '1px solid var(--color-charcoal-light)', padding: '0.25rem 0.75rem', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  {isEditingInfo ? 'ביטול עריכה' : '✏️ עריכת פרטים'}
+                </button>
               </div>
+
+              {isEditingInfo ? (
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsSavingInfo(true);
+                    const fd = new FormData(e.currentTarget);
+                    fd.append('id', client.id);
+                    await updateClientInfo(fd);
+                    const updated = await getClientFullProfile(client.id);
+                    setClient(updated);
+                    setIsSavingInfo(false);
+                    setIsEditingInfo(false);
+                  }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem', background: 'rgba(255,255,255,0.5)', padding: '1rem', borderRadius: '8px' }}
+                >
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.85rem' }}>שם פרטי</label>
+                      <input type="text" name="name" defaultValue={client.name} required style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.85rem' }}>שם משפחה</label>
+                      <input type="text" name="lastName" defaultValue={client.lastName || ''} required style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.85rem' }}>טלפון</label>
+                      <input type="tel" name="phone" defaultValue={client.phone} required style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.85rem' }}>ת.ז</label>
+                      <input type="text" name="idNumber" defaultValue={client.idNumber || ''} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.85rem' }}>כתובת</label>
+                      <input type="text" name="address" defaultValue={client.address || ''} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.85rem' }}>אימייל</label>
+                      <input type="email" name="email" defaultValue={client.email || ''} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.85rem' }}>תאריך לידה</label>
+                      <input type="date" name="dateOfBirth" defaultValue={client.birthDate ? client.birthDate.substring(0, 10) : (client.dateOfBirth ? client.dateOfBirth.substring(0, 10) : '')} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.85rem' }}>מגדר</label>
+                      <select name="gender" defaultValue={client.gender || ''} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }}>
+                        <option value="">בחר/י</option>
+                        <option value="אישה">אישה</option>
+                        <option value="גבר">גבר</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.85rem' }}>מצב רפואי / הערות קבועות</label>
+                    <textarea name="medicalNotes" defaultValue={client.medicalNotes || ''} rows={3} style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc' }} />
+                  </div>
+                  <button type="submit" disabled={isSavingInfo} style={{ background: 'var(--color-rose-gold)', color: 'white', padding: '0.75rem', border: 'none', borderRadius: '4px', cursor: 'pointer', marginTop: '0.5rem' }}>
+                    {isSavingInfo ? 'שומר...' : 'שמור שינויים'}
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <p><strong>כתובת:</strong> {client.address || 'לא צוינה'}</p>
+                  <p><strong>אימייל:</strong> {client.email || 'לא צוין'}</p>
+                  <p><strong>תאריך לידה:</strong> {client.birthDate ? new Date(client.birthDate).toLocaleDateString('he-IL') : (client.dateOfBirth ? new Date(client.dateOfBirth).toLocaleDateString('he-IL') : 'לא צוין')}</p>
+                  <p><strong>הצהרת בריאות:</strong> {client.healthDeclarationSent ? 'נשלחה ✅' : 'לא נשלחה ❌'}</p>
+                  <div style={{ marginTop: '1rem', padding: '1rem', background: '#fff', borderRadius: '8px', border: '1px solid #eee' }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0' }}>מצב רפואי / הערות קבועות</h4>
+                    <p style={{ margin: 0 }}>{client.medicalNotes || 'אין הערות רפואיות'}</p>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -177,6 +260,32 @@ export default function ClientProfileModal({ clientId, onClose }: { clientId: st
                 {client.appointments.map((apt: any) => (
                   <FutureAppointmentItem key={apt.id} appointment={apt} services={services} />
                 ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'gallery' && (
+            <div>
+              <h3>גלריית תמונות (לפני/אחרי)</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+                {client.treatmentLogs.filter((t: any) => t.imageUrls).length === 0 && <p>לא הועלו תמונות ללקוח זה.</p>}
+                {client.treatmentLogs
+                  .filter((t: any) => t.imageUrls)
+                  .map((t: any) => {
+                    const urls = t.imageUrls.split(',');
+                    return urls.map((url: string, idx: number) => (
+                      <div key={`${t.id}-${idx}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <img 
+                          src={url} 
+                          alt="תמונת טיפול" 
+                          style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #eee' }} 
+                        />
+                        <span style={{ fontSize: '0.8rem', color: '#666', textAlign: 'center' }}>
+                          {new Date(t.createdAt).toLocaleDateString('he-IL')} - {t.bodyArea}
+                        </span>
+                      </div>
+                    ));
+                  })}
               </div>
             </div>
           )}
